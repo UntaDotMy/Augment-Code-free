@@ -31,9 +31,12 @@ def force_delete_directory(path: Path) -> bool:
     except Exception:
         return False
 
-def clean_workspace_storage() -> dict:
+def clean_workspace_storage(editor_type: str = "VSCodium") -> dict:
     """
     Cleans the workspace storage directory after creating a backup.
+
+    Args:
+        editor_type (str): Editor type, either "VSCodium" or "Code" (VS Code)
 
     This function:
     1. Gets the workspace storage path
@@ -44,10 +47,11 @@ def clean_workspace_storage() -> dict:
         dict: A dictionary containing operation results
         {
             'backup_path': str,
-            'deleted_files_count': int
+            'deleted_files_count': int,
+            'editor_type': str
         }
     """
-    workspace_path = get_workspace_storage_path()
+    workspace_path = get_workspace_storage_path(editor_type)
 
     if not os.path.exists(workspace_path):
         raise FileNotFoundError(f"Workspace storage directory not found at: {workspace_path}")
@@ -133,5 +137,6 @@ def clean_workspace_storage() -> dict:
         'backup_path': str(backup_path),
         'deleted_files_count': total_files,
         'failed_operations': failed_operations,
-        'failed_compressions': failed_compressions
+        'failed_compressions': failed_compressions,
+        'editor_type': editor_type
     }

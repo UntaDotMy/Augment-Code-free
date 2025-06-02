@@ -30,6 +30,31 @@ class AugmentFreeAPI:
     def __init__(self):
         """Initialize the API."""
         self.status = "ready"
+        self.editor_type = "VSCodium"  # Default editor type
+
+    def set_editor_type(self, editor_type: str) -> Dict[str, Any]:
+        """
+        Set the editor type for operations.
+
+        Args:
+            editor_type (str): Editor type, either "VSCodium" or "Code"
+
+        Returns:
+            dict: Operation result
+        """
+        if editor_type not in ["VSCodium", "Code"]:
+            return {
+                "success": False,
+                "error": "Invalid editor type. Must be 'VSCodium' or 'Code'",
+                "message": "Invalid editor type"
+            }
+
+        self.editor_type = editor_type
+        return {
+            "success": True,
+            "data": {"editor_type": self.editor_type},
+            "message": f"Editor type set to {editor_type}"
+        }
 
     def get_system_info(self) -> Dict[str, Any]:
         """
@@ -44,10 +69,11 @@ class AugmentFreeAPI:
                 "data": {
                     "home_dir": get_home_dir(),
                     "app_data_dir": get_app_data_dir(),
-                    "storage_path": get_storage_path(),
-                    "db_path": get_db_path(),
-                    "machine_id_path": get_machine_id_path(),
-                    "workspace_storage_path": get_workspace_storage_path(),
+                    "storage_path": get_storage_path(self.editor_type),
+                    "db_path": get_db_path(self.editor_type),
+                    "machine_id_path": get_machine_id_path(self.editor_type),
+                    "workspace_storage_path": get_workspace_storage_path(self.editor_type),
+                    "editor_type": self.editor_type,
                 },
                 "message": "System information retrieved successfully"
             }
@@ -66,7 +92,7 @@ class AugmentFreeAPI:
             dict: Operation result with backup information and new IDs
         """
         try:
-            result = modify_telemetry_ids()
+            result = modify_telemetry_ids(self.editor_type)
             return {
                 "success": True,
                 "data": result,
@@ -88,7 +114,7 @@ class AugmentFreeAPI:
             dict: Operation result with backup information and deletion count
         """
         try:
-            result = clean_augment_data()
+            result = clean_augment_data(self.editor_type)
             return {
                 "success": True,
                 "data": result,
@@ -110,7 +136,7 @@ class AugmentFreeAPI:
             dict: Operation result with backup information and deletion count
         """
         try:
-            result = clean_workspace_storage()
+            result = clean_workspace_storage(self.editor_type)
             return {
                 "success": True,
                 "data": result,

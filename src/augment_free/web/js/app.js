@@ -17,8 +17,12 @@ const elements = {
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     initializeElements();
-    checkAPIStatus();
-    loadSystemInfo();
+
+    // Wait a bit for pywebview to be ready
+    setTimeout(() => {
+        checkAPIStatus();
+        loadSystemInfo();
+    }, 500);
 });
 
 // Initialize DOM element references
@@ -29,7 +33,7 @@ function initializeElements() {
     elements.resultsContent = document.getElementById('resultsContent');
     elements.loadingOverlay = document.getElementById('loadingOverlay');
     elements.loadingText = document.getElementById('loadingText');
-    
+
     // Button references
     elements.buttons = {
         telemetry: document.getElementById('telemetryBtn'),
@@ -37,6 +41,29 @@ function initializeElements() {
         workspace: document.getElementById('workspaceBtn'),
         all: document.getElementById('allBtn')
     };
+}
+
+// Change editor type
+async function changeEditor() {
+    const editorSelect = document.getElementById('editorSelect');
+    const selectedEditor = editorSelect.value;
+
+    if (!checkAPIAvailable()) return;
+
+    try {
+        const result = await pywebview.api.set_editor_type(selectedEditor);
+        if (result.success) {
+            console.log(`Editor type changed to: ${selectedEditor}`);
+            // Reload system info to show new paths
+            loadSystemInfo();
+        } else {
+            console.error('Failed to change editor type:', result.error);
+            alert('切换编辑器失败: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error changing editor type:', error);
+        alert('切换编辑器时发生错误: ' + error.message);
+    }
 }
 
 // Show loading overlay
@@ -64,6 +91,14 @@ function setButtonsDisabled(disabled) {
 // Check API status
 async function checkAPIStatus() {
     try {
+        // Wait for pywebview to be ready
+        if (typeof pywebview === 'undefined') {
+            elements.apiStatus.textContent = '⏳ 等待连接...';
+            elements.apiStatus.style.background = 'rgba(255, 193, 7, 0.2)';
+            setTimeout(checkAPIStatus, 1000); // Retry after 1 second
+            return;
+        }
+
         const result = await pywebview.api.get_status();
         if (result.success) {
             elements.apiStatus.textContent = '✅ 就绪';
@@ -76,14 +111,24 @@ async function checkAPIStatus() {
         console.error('API status check failed:', error);
         elements.apiStatus.textContent = '❌ 连接失败';
         elements.apiStatus.style.background = 'rgba(220, 53, 69, 0.2)';
+        // Retry after a delay
+        setTimeout(checkAPIStatus, 2000);
     }
 }
 
 // Load system information
 async function loadSystemInfo() {
     try {
+        // Check if pywebview is available
+        if (typeof pywebview === 'undefined') {
+            elements.systemInfo.innerHTML = `
+                <div class="loading">等待API连接...</div>
+            `;
+            return;
+        }
+
         const result = await pywebview.api.get_system_info();
-        
+
         if (result.success) {
             displaySystemInfo(result.data);
         } else {
@@ -106,8 +151,7 @@ async function loadSystemInfo() {
 // Display system information
 function displaySystemInfo(data) {
     const infoItems = [
-        { label: '用户目录', value: data.home_dir },
-        { label: '应用数据目录', value: data.app_data_dir },
+        { label: '当前编辑器', value: data.editor_type || 'VSCodium' },
         { label: 'Storage 文件', value: data.storage_path },
         { label: '数据库文件', value: data.db_path },
         { label: '机器 ID 文件', value: data.machine_id_path },
@@ -120,14 +164,29 @@ function displaySystemInfo(data) {
             <div class="info-value">${item.value}</div>
         </div>
     `).join('');
+
+    // Update editor select to match current editor type
+    const editorSelect = document.getElementById('editorSelect');
+    if (editorSelect && data.editor_type) {
+        editorSelect.value = data.editor_type;
+    }
+}
+
+// Check if API is available
+function checkAPIAvailable() {
+    if (typeof pywebview === 'undefined') {
+        alert('API未连接，请等待应用完全加载后再试！');
+        return false;
+    }
+    return true;
 }
 
 // Modify telemetry IDs
 async function modifyTelemetry() {
-    if (isOperationRunning) return;
-    
+    if (isOperationRunning || !checkAPIAvailable()) return;
+
     showLoading('正在修改 Telemetry ID...');
-    
+
     try {
         const result = await pywebview.api.modify_telemetry();
         displayResults('Telemetry ID 修改', result);
@@ -144,10 +203,10 @@ async function modifyTelemetry() {
 
 // Clean database
 async function cleanDatabase() {
-    if (isOperationRunning) return;
-    
+    if (isOperationRunning || !checkAPIAvailable()) return;
+
     showLoading('正在清理数据库...');
-    
+
     try {
         const result = await pywebview.api.clean_database();
         displayResults('数据库清理', result);
@@ -164,10 +223,10 @@ async function cleanDatabase() {
 
 // Clean workspace
 async function cleanWorkspace() {
-    if (isOperationRunning) return;
-    
+    if (isOperationRunning || !checkAPIAvailable()) return;
+
     showLoading('正在清理工作区...');
-    
+
     try {
         const result = await pywebview.api.clean_workspace();
         displayResults('工作区清理', result);
@@ -184,10 +243,10 @@ async function cleanWorkspace() {
 
 // Run all operations
 async function runAllOperations() {
-    if (isOperationRunning) return;
-    
+    if (isOperationRunning || !checkAPIAvailable()) return;
+
     showLoading('正在执行所有清理操作...');
-    
+
     try {
         const result = await pywebview.api.run_all_operations();
         displayAllResults(result);
@@ -206,23 +265,23 @@ async function runAllOperations() {
 function displayResults(operationName, result) {
     const resultClass = result.success ? 'success' : 'error';
     const icon = result.success ? '✅' : '❌';
-    
+
     let content = `
         <div class="result-item ${resultClass}">
             <h3>${icon} ${operationName}</h3>
             <p><strong>状态:</strong> ${result.message}</p>
     `;
-    
+
     if (result.success && result.data) {
         content += formatResultData(result.data);
     }
-    
+
     if (!result.success && result.error) {
         content += `<p><strong>错误:</strong> ${result.error}</p>`;
     }
-    
+
     content += '</div>';
-    
+
     elements.resultsContent.innerHTML = content;
     elements.resultsPanel.style.display = 'block';
     elements.resultsPanel.scrollIntoView({ behavior: 'smooth' });
@@ -231,35 +290,35 @@ function displayResults(operationName, result) {
 // Display results for all operations
 function displayAllResults(result) {
     let content = '';
-    
+
     if (result.data) {
         const operations = [
             { key: 'telemetry', name: 'Telemetry ID 修改' },
             { key: 'database', name: '数据库清理' },
             { key: 'workspace', name: '工作区清理' }
         ];
-        
+
         operations.forEach(op => {
             if (result.data[op.key]) {
                 const opResult = result.data[op.key];
                 const resultClass = opResult.success ? 'success' : 'error';
                 const icon = opResult.success ? '✅' : '❌';
-                
+
                 content += `
                     <div class="result-item ${resultClass}">
                         <h4>${icon} ${op.name}</h4>
                         <p>${opResult.message}</p>
                 `;
-                
+
                 if (opResult.success && opResult.data) {
                     content += formatResultData(opResult.data);
                 }
-                
+
                 content += '</div>';
             }
         });
     }
-    
+
     elements.resultsContent.innerHTML = content;
     elements.resultsPanel.style.display = 'block';
     elements.resultsPanel.scrollIntoView({ behavior: 'smooth' });
@@ -268,25 +327,25 @@ function displayAllResults(result) {
 // Format result data for display
 function formatResultData(data) {
     let formatted = '';
-    
+
     if (data.old_machine_id && data.new_machine_id) {
         formatted += `
             <p><strong>旧机器 ID:</strong> ${data.old_machine_id.substring(0, 16)}...</p>
             <p><strong>新机器 ID:</strong> ${data.new_machine_id.substring(0, 16)}...</p>
         `;
     }
-    
+
     if (data.deleted_rows !== undefined) {
         formatted += `<p><strong>删除记录数:</strong> ${data.deleted_rows}</p>`;
     }
-    
+
     if (data.deleted_files_count !== undefined) {
         formatted += `<p><strong>删除文件数:</strong> ${data.deleted_files_count}</p>`;
     }
-    
+
     if (data.storage_backup_path) {
         formatted += `<p><strong>备份位置:</strong> ${data.storage_backup_path}</p>`;
     }
-    
+
     return formatted;
 }

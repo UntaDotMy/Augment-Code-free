@@ -70,6 +70,11 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 8px;
+}
+
+.status-item:last-child {
+    margin-bottom: 0;
 }
 
 .status-label {
@@ -83,6 +88,46 @@ body {
     border-radius: 20px;
 }
 
+.editor-select {
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,248,255,0.95) 100%);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-weight: 600;
+    color: #2d3748;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    font-size: 0.9rem;
+    min-width: 120px;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+    padding-right: 32px;
+}
+
+.editor-select:hover {
+    background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(240,248,255,1) 100%);
+    border-color: rgba(102, 126, 234, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.editor-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.editor-select option {
+    background: white;
+    color: #2d3748;
+    padding: 8px 12px;
+    font-weight: 500;
+}
+
 /* Info Grid */
 .info-grid {
     display: grid;
@@ -92,10 +137,18 @@ body {
 }
 
 .info-item {
-    background: #f7fafc;
-    padding: 15px;
-    border-radius: 8px;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    padding: 16px;
+    border-radius: 12px;
     border-left: 4px solid #4299e1;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.info-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-left-color: #667eea;
 }
 
 .info-label {
@@ -284,5 +337,20 @@ body {
 
     .info-grid {
         grid-template-columns: 1fr;
+    }
+
+    .status-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .editor-select {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .status-panel {
+        padding: 16px;
     }
 }

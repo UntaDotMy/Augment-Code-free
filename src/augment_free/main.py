@@ -55,7 +55,7 @@ def main():
 
     # Start the application
     try:
-        webview.start(debug=False)  # Disable debug to avoid port issues
+        webview.start(debug=False)
     except KeyboardInterrupt:
         print("\nApplication interrupted by user")
     except Exception as e:
