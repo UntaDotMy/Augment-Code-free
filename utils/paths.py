@@ -44,20 +44,20 @@ def get_storage_path() -> str:
         str: Path to the storage.json file
         
     Platform specific paths:
-        - Windows: %APPDATA%/Code/User/globalStorage/storage.json
-        - macOS: ~/Library/Application Support/Code/User/globalStorage/storage.json
-        - Linux: ~/.config/Code/User/globalStorage/storage.json
+        - Windows: %APPDATA%/VSCodium/User/globalStorage/storage.json
+        - macOS: ~/Library/Application Support/VSCodium/User/globalStorage/storage.json
+        - Linux: ~/.config/VSCodium/User/globalStorage/storage.json
     """
     if sys.platform == "win32":
         # Windows
         base_path = os.getenv("APPDATA", "")
-        return os.path.join(base_path, "Code", "User", "globalStorage", "storage.json")
+        return os.path.join(base_path, "VSCodium", "User", "globalStorage", "storage.json")
     elif sys.platform == "darwin":
         # macOS
-        return os.path.join(str(Path.home()), "Library", "Application Support", "Code", "User", "globalStorage", "storage.json")
+        return os.path.join(str(Path.home()), "Library", "Application Support", "VSCodium", "User", "globalStorage", "storage.json")
     else:
         # Linux and other Unix-like systems
-        return os.path.join(str(Path.home()), ".config", "Code", "User", "globalStorage", "storage.json")
+        return os.path.join(str(Path.home()), ".config", "VSCodium", "User", "globalStorage", "storage.json")
 
 
 def get_db_path() -> str:
@@ -68,20 +68,20 @@ def get_db_path() -> str:
         str: Path to the state.vscdb file
         
     Platform specific paths:
-        - Windows: %APPDATA%/Code/User/globalStorage/state.vscdb
-        - macOS: ~/Library/Application Support/Code/User/globalStorage/state.vscdb
-        - Linux: ~/.config/Code/User/globalStorage/state.vscdb
+        - Windows: %APPDATA%/VSCodium/User/globalStorage/state.vscdb
+        - macOS: ~/Library/Application Support/VSCodium/User/globalStorage/state.vscdb
+        - Linux: ~/.config/VSCodium/User/globalStorage/state.vscdb
     """
     if sys.platform == "win32":
         # Windows
         base_path = os.getenv("APPDATA", "")
-        return os.path.join(base_path, "Code", "User", "globalStorage", "state.vscdb")
+        return os.path.join(base_path, "VSCodium", "User", "globalStorage", "state.vscdb")
     elif sys.platform == "darwin":
         # macOS
-        return os.path.join(str(Path.home()), "Library", "Application Support", "Code", "User", "globalStorage", "state.vscdb")
+        return os.path.join(str(Path.home()), "Library", "Application Support", "VSCodium", "User", "globalStorage", "state.vscdb")
     else:
         # Linux and other Unix-like systems
-        return os.path.join(str(Path.home()), ".config", "Code", "User", "globalStorage", "state.vscdb")
+        return os.path.join(str(Path.home()), ".config", "VSCodium", "User", "globalStorage", "state.vscdb")
 
 
 def get_machine_id_path() -> str:
@@ -92,20 +92,20 @@ def get_machine_id_path() -> str:
         str: Path to the machine ID file
         
     Platform specific paths:
-        - Windows: %APPDATA%/Code/User/machineid
-        - macOS: ~/Library/Application Support/Code/machineid
-        - Linux: ~/.config/Code/User/machineid
+        - Windows: %APPDATA%/VSCodium/User/machineid
+        - macOS: ~/Library/Application Support/VSCodium/machineid
+        - Linux: ~/.config/VSCodium/User/machineid
     """
     if sys.platform == "win32":
         # Windows
         base_path = os.getenv("APPDATA", "")
-        return os.path.join(base_path, "Code", "User", "machineid")
+        return os.path.join(base_path, "VSCodium", "User", "machineid")
     elif sys.platform == "darwin":
         # macOS
-        return os.path.join(str(Path.home()), "Library", "Application Support", "Code", "machineid")
+        return os.path.join(str(Path.home()), "Library", "Application Support", "VSCodium", "machineid")
     else:
         # Linux and other Unix-like systems
-        return os.path.join(str(Path.home()), ".config", "Code", "machineid")
+        return os.path.join(str(Path.home()), ".config", "VSCodium", "User", "machineid")
 
 
 def get_workspace_storage_path() -> str:
@@ -116,17 +116,17 @@ def get_workspace_storage_path() -> str:
         str: Path to the workspaceStorage directory
         
     Platform specific paths:
-        - Windows: %APPDATA%/Code/User/workspaceStorage
-        - macOS: ~/Library/Application Support/Code/User/workspaceStorage
-        - Linux: ~/.config/Code/User/workspaceStorage
+        - Windows: %APPDATA%/VSCodium/User/workspaceStorage
+        - macOS: ~/Library/Application Support/VSCodium/User/workspaceStorage
+        - Linux: ~/.config/VSCodium/User/workspaceStorage
     """
     if sys.platform == "win32":
         # Windows
         base_path = os.getenv("APPDATA", "")
-        return os.path.join(base_path, "Code", "User", "workspaceStorage")
+        return os.path.join(base_path, "VSCodium", "User", "workspaceStorage")
     elif sys.platform == "darwin":
         # macOS
-        return os.path.join(str(Path.home()), "Library", "Application Support", "Code", "User", "workspaceStorage")
+        return os.path.join(str(Path.home()), "Library", "Application Support", "VSCodium", "User", "workspaceStorage")
     else:
         # Linux and other Unix-like systems
-        return os.path.join(str(Path.home()), ".config", "Code", "User", "workspaceStorage") 
+        return os.path.join(str(Path.home()), ".config", "VSCodium", "User", "workspaceStorage") 
