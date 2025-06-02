@@ -50,6 +50,9 @@ async function changeEditor() {
 
     if (!checkAPIAvailable()) return;
 
+    // Update footer editor names immediately
+    updateFooterEditorNames(selectedEditor);
+
     try {
         const result = await pywebview.api.set_editor_type(selectedEditor);
         if (result.success) {
@@ -63,6 +66,20 @@ async function changeEditor() {
     } catch (error) {
         console.error('Error changing editor type:', error);
         alert('切换编辑器时发生错误: ' + error.message);
+    }
+}
+
+// Update footer editor names
+function updateFooterEditorNames(editorType) {
+    const editorName = editorType === 'Code' ? 'VS Code' : 'VSCodium';
+    const footerEditorName1 = document.getElementById('footerEditorName1');
+    const footerEditorName2 = document.getElementById('footerEditorName2');
+
+    if (footerEditorName1) {
+        footerEditorName1.textContent = editorName;
+    }
+    if (footerEditorName2) {
+        footerEditorName2.textContent = editorName;
     }
 }
 
@@ -173,6 +190,9 @@ function displaySystemInfo(data) {
     if (editorSelect && data.editor_type) {
         editorSelect.value = data.editor_type;
     }
+
+    // Update footer editor names
+    updateFooterEditorNames(data.editor_type || 'VSCodium');
 }
 
 // Check if API is available
