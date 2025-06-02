@@ -19,7 +19,7 @@ AugmentCode Free 是一个用于清理 AugmentCode 相关数据的简易Gui工�
 ## 功能特性
 
 - 🖥️ **现代化 GUI 界面**
-  - 基于 webview 的跨平台桌面应用
+  - 基于 webview 的桌面应用程序
   - 直观的界面设计
   - 实时操作反馈
 
@@ -96,15 +96,15 @@ AugmentCode Free 是一个用于清理 AugmentCode 相关数据的简易Gui工�
 ### 开发环境设置
 
 1. Fork 此仓库
-2. 克隆您的 fork：
+2. 克隆你的fork：
    ```bash
-   git clone https://github.com/your-username/Augment-free.git
+   git clone https://github.com/你的github用户名/Augment-free.git
    ```
 3. 安装开发依赖：
    ```bash
    uv sync --dev
    ```
-4. 进行您的修改
+4. 进行修改
 
 ## 许可证
 

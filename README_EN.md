@@ -96,7 +96,7 @@ AugmentCode Free is a simple GUI tool for cleaning AugmentCode-related data, hel
 1. Fork this repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/your-username/Augment-free.git
+   git clone https://github.com/your-github-username/Augment-free.git
    ```
 3. Install development dependencies:
    ```bash
