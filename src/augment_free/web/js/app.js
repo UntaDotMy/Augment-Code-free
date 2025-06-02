@@ -160,7 +160,7 @@ function displaySystemInfo(data) {
 
     elements.systemInfo.innerHTML = infoItems.map(item => `
         <div class="info-item">
-            <div class="info-label">${item.label}:</div>
+            <div class="info-label">${item.label}</div>
             <div class="info-value">${item.value}</div>
         </div>
     `).join('');
