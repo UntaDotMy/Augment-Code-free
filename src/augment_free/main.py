@@ -19,6 +19,24 @@ def get_web_dir() -> str:
     return str(web_dir)
 
 
+def get_icon_path() -> str | None:
+    """
+    Get the application icon path.
+    Works both in development and when packaged with PyInstaller.
+    """
+    if getattr(sys, "frozen", False):
+        # Running as PyInstaller bundle
+        base_path = Path(sys._MEIPASS)
+        icon_path = base_path / "app.ico"
+    else:
+        # Running in development - icon is in project root
+        project_root = Path(__file__).parent.parent.parent
+        icon_path = project_root / "app.ico"
+
+    # Return path if file exists, otherwise return None
+    return str(icon_path) if icon_path.exists() else None
+
+
 def main():
     """
     Main function to start the Free AugmentCode application.
@@ -36,18 +54,28 @@ def main():
         print("Please ensure the web directory contains index.html")
         sys.exit(1)
 
+    # Get icon path
+    icon_path = get_icon_path()
+
     # Create webview window
-    window = webview.create_window(
-        title="Free AugmentCode",
-        url=index_path,
-        js_api=api,
-        width=1000,
-        height=700,
-        min_size=(800, 600),
-        resizable=True,
-        shadow=True,
-        on_top=False,
-    )
+    window_kwargs = {
+        "title": "Free AugmentCode",
+        "url": index_path,
+        "js_api": api,
+        "width": 1000,
+        "height": 700,
+        "min_size": (800, 600),
+        "resizable": True,
+        "shadow": True,
+        "on_top": False,
+    }
+
+    # Add icon if available (supported on GTK/QT platforms)
+    if icon_path:
+        window_kwargs["icon"] = icon_path
+        print(f"Using icon: {icon_path}")
+
+    window = webview.create_window(**window_kwargs)
 
     print("Starting Free AugmentCode...")
     print(f"Web directory: {web_dir}")
