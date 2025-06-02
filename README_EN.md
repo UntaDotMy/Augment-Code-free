@@ -39,7 +39,7 @@ AugmentCode Free is a simple GUI tool for cleaning AugmentCode-related data, hel
 
 ## Installation
 
-### Method 1: Download Executable (Recommended)
+### Method 1: Download Executable ( Windows Recommended)
 
 1. Download the latest version from [Releases](https://github.com/vagmr/Augment-free/releases) page
 2. Extract and run `AugmentFree_latest.exe`

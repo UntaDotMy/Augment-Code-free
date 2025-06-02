@@ -40,7 +40,7 @@ AugmentCode Free 是一个用于清理 AugmentCode 相关数据的简易Gui工�
 
 ## 安装说明
 
-### 方式一：直接下载可执行文件（推荐）
+### 方式一：直接下载可执行文件（windows 推荐）
 
 1. 从 [Releases](https://github.com/vagmr/Augment-free/releases) 页面下载最新版本
 2. 解压并运行 `AugmentFree_latest.exe`
