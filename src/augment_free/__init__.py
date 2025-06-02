@@ -7,7 +7,6 @@ telemetry data, database records, and workspace storage.
 
 __version__ = "0.1.0"
 __author__ = "vagmr"
-__email__ = "your-email@example.com"
 
 from .main import main
 

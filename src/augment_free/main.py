@@ -141,7 +141,7 @@ def main():
         # Start webview (icon parameter only works on GTK/QT, not Windows)
         if sys.platform == "win32":
             # On Windows, start without icon parameter and set it manually
-            webview.start(debug=True)
+            webview.start(debug=False)
         else:
             # On Linux/Mac, use the icon parameter
             start_kwargs = {"debug": False}
