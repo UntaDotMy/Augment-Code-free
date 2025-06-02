@@ -151,17 +151,20 @@ async function loadSystemInfo() {
 // Display system information
 function displaySystemInfo(data) {
     const infoItems = [
-        { label: '当前编辑器', value: data.editor_type || 'VSCodium' },
-        { label: 'Storage 文件', value: data.storage_path },
-        { label: '数据库文件', value: data.db_path },
-        { label: '机器 ID 文件', value: data.machine_id_path },
-        { label: '工作区存储', value: data.workspace_storage_path }
+        { label: '当前编辑器', value: data.editor_type || 'VSCodium', icon: '🎯' },
+        { label: 'Storage 文件', value: data.storage_path, icon: '💾' },
+        { label: '数据库文件', value: data.db_path, icon: '🗃️' },
+        { label: '机器 ID 文件', value: data.machine_id_path, icon: '🔑' },
+        { label: '工作区存储', value: data.workspace_storage_path, icon: '📁' }
     ];
 
     elements.systemInfo.innerHTML = infoItems.map(item => `
         <div class="info-item">
-            <div class="info-label">${item.label}</div>
-            <div class="info-value">${item.value}</div>
+            <div class="info-icon">${item.icon}</div>
+            <div class="info-content">
+                <div class="info-label">${item.label}</div>
+                <div class="info-value">${item.value}</div>
+            </div>
         </div>
     `).join('');
 
