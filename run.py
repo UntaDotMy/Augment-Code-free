@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def main():
-    """Run the application with virtual environment."""
+    """激活虚拟环境."""
     project_root = Path(__file__).parent
     venv_activate = project_root / ".venv" / "Scripts" / "Activate.ps1"
     

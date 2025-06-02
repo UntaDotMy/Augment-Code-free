@@ -11,6 +11,14 @@ from pathlib import Path
 
 from .api.core import AugmentFreeAPI
 
+# Windows-specific imports for icon setting
+if sys.platform == "win32":
+    try:
+        import ctypes
+        from ctypes import wintypes
+    except ImportError:
+        ctypes = None
+
 
 def get_web_dir() -> str:
     """Get the web directory path."""
@@ -35,6 +43,46 @@ def get_icon_path() -> str | None:
 
     # Return path if file exists, otherwise return None
     return str(icon_path) if icon_path.exists() else None
+
+
+def set_windows_icon(icon_path: str) -> None:
+    """
+    Set application icon on Windows using Win32 API.
+    This is called after the window is created.
+    """
+    if sys.platform != "win32" or not ctypes:
+        return
+
+    try:
+        # Wait for window to be created
+        import time
+        time.sleep(0.5)
+
+        # Get the window handle
+        hwnd = ctypes.windll.user32.GetForegroundWindow()
+        if hwnd == 0:
+            return
+
+        # Load the icon
+        hicon = ctypes.windll.user32.LoadImageW(
+            None,  # hInst
+            icon_path,  # name
+            1,  # IMAGE_ICON
+            0,  # cx (use default)
+            0,  # cy (use default)
+            0x00000010 | 0x00000040  # LR_LOADFROMFILE | LR_DEFAULTSIZE
+        )
+
+        if hicon != 0:
+            # Set both small and large icons
+            ctypes.windll.user32.SendMessageW(hwnd, 0x0080, 0, hicon)  # WM_SETICON, ICON_SMALL
+            ctypes.windll.user32.SendMessageW(hwnd, 0x0080, 1, hicon)  # WM_SETICON, ICON_LARGE
+            print("✅ Successfully set Windows icon")
+        else:
+            print(f"❌ Failed to load icon: {icon_path}")
+
+    except Exception as e:
+        print(f"❌ Error setting Windows icon: {e}")
 
 
 def main():
@@ -70,25 +118,46 @@ def main():
         "on_top": False,
     }
 
-    # Add icon if available (supported on GTK/QT platforms)
+    # Print icon path if available (icon will be set via webview.start())
     if icon_path:
-        window_kwargs["icon"] = icon_path
-        print(f"Using icon: {icon_path}")
+        print("Using icon success")
 
     window = webview.create_window(**window_kwargs)
 
+    # Set up window loaded callback for Windows icon setting
+    if icon_path and sys.platform == "win32":
+        window.events.loaded += window_loaded
+
     print("Starting Free AugmentCode...")
-    print(f"Web directory: {web_dir}")
     print("Close the application window to exit.")
 
     # Start the application
     try:
-        webview.start(debug=False)
+        # Start webview (icon parameter only works on GTK/QT, not Windows)
+        if sys.platform == "win32":
+            # On Windows, start without icon parameter and set it manually
+            webview.start(debug=False)
+        else:
+            # On Linux/Mac, use the icon parameter
+            start_kwargs = {"debug": False}
+            if icon_path:
+                start_kwargs["icon"] = icon_path
+            webview.start(**start_kwargs)
+
     except KeyboardInterrupt:
         print("\nApplication interrupted by user")
     except Exception as e:
         print(f"Error starting application: {e}")
         sys.exit(1)
+
+
+def window_loaded():
+    """Callback function called when window is loaded."""
+    icon_path = get_icon_path()
+    if icon_path and sys.platform == "win32":
+        # Set Windows icon after window is created
+        import threading
+        threading.Thread(target=set_windows_icon, args=(icon_path,), daemon=True).start()
 
 
 if __name__ == "__main__":
