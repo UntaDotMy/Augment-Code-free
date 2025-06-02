@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free AugmentCode</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🐱 Free AugmentCode</h1>
+            <p class="subtitle">清理 AugmentCode 相关数据的现代化工具</p>
+        </header>
+
+        <!-- Status Panel -->
+        <div class="status-panel" id="statusPanel">
+            <div class="status-item">
+                <span class="status-label">状态:</span>
+                <span class="status-value" id="apiStatus">检查中...</span>
+            </div>
+        </div>
+
+        <!-- System Info Panel -->
+        <div class="panel">
+            <h2>📁 系统信息</h2>
+            <div class="info-grid" id="systemInfo">
+                <div class="loading">正在加载系统信息...</div>
+            </div>
+            <button class="btn btn-secondary" onclick="loadSystemInfo()">刷新信息</button>
+        </div>
+
+        <!-- Operations Panel -->
+        <div class="panel">
+            <h2>🛠️ 清理操作</h2>
+            <div class="operations-grid">
+                <!-- Telemetry Operation -->
+                <div class="operation-card">
+                    <h3>🔑 修改 Telemetry ID</h3>
+                    <p>重置设备 ID 和机器 ID，生成新的随机标识符</p>
+                    <button class="btn btn-primary" onclick="modifyTelemetry()" id="telemetryBtn">
+                        修改 Telemetry ID
+                    </button>
+                </div>
+
+                <!-- Database Operation -->
+                <div class="operation-card">
+                    <h3>🗃️ 清理数据库</h3>
+                    <p>清理 SQLite 数据库中包含 'augment' 的记录</p>
+                    <button class="btn btn-primary" onclick="cleanDatabase()" id="databaseBtn">
+                        清理数据库
+                    </button>
+                </div>
+
+                <!-- Workspace Operation -->
+                <div class="operation-card">
+                    <h3>💾 清理工作区</h3>
+                    <p>清理工作区存储文件和目录</p>
+                    <button class="btn btn-primary" onclick="cleanWorkspace()" id="workspaceBtn">
+                        清理工作区
+                    </button>
+                </div>
+
+                <!-- All Operations -->
+                <div class="operation-card featured">
+                    <h3>🚀 一键清理</h3>
+                    <p>执行所有清理操作（推荐）</p>
+                    <button class="btn btn-success" onclick="runAllOperations()" id="allBtn">
+                        执行所有操作
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="panel" id="resultsPanel" style="display: none;">
+            <h2>📊 操作结果</h2>
+            <div class="results-content" id="resultsContent">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>⚠️ 使用前请确保已退出 VS Code 和 AugmentCode 插件</p>
+            <p>💡 操作完成后重启 VS Code 并使用新邮箱登录 AugmentCode</p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p id="loadingText">正在处理...</p>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

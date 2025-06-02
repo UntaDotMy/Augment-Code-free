@@ -3,7 +3,7 @@ import shutil
 import time
 import zipfile
 import stat
-from utils.paths import get_workspace_storage_path
+from ...utils.paths import get_workspace_storage_path
 from pathlib import Path
 
 def remove_readonly(func, path, excinfo):
@@ -34,12 +34,12 @@ def force_delete_directory(path: Path) -> bool:
 def clean_workspace_storage() -> dict:
     """
     Cleans the workspace storage directory after creating a backup.
-    
+
     This function:
     1. Gets the workspace storage path
     2. Creates a zip backup of all files in the directory
     3. Deletes all files in the directory
-    
+
     Returns:
         dict: A dictionary containing operation results
         {
@@ -48,17 +48,17 @@ def clean_workspace_storage() -> dict:
         }
     """
     workspace_path = get_workspace_storage_path()
-    
+
     if not os.path.exists(workspace_path):
         raise FileNotFoundError(f"Workspace storage directory not found at: {workspace_path}")
-    
+
     # Convert to Path object for better path handling
     workspace_path = Path(workspace_path)
-    
+
     # Create backup filename with timestamp
     timestamp = int(time.time())
     backup_path = f"{workspace_path}_backup_{timestamp}.zip"
-    
+
     # Create zip backup
     failed_compressions = []
     with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -68,7 +68,7 @@ def clean_workspace_storage() -> dict:
                     file_path_str = str(file_path)
                     if os.name == 'nt':
                         file_path_str = '\\\\?\\' + str(file_path.resolve())
-                    
+
                     arcname = file_path.relative_to(workspace_path)
                     zipf.write(file_path_str, str(arcname))
                 except (OSError, PermissionError, zipfile.BadZipFile) as e:
@@ -77,13 +77,13 @@ def clean_workspace_storage() -> dict:
                         'error': str(e)
                     })
                     continue
-    
+
     # Count files before deletion
     total_files = sum(1 for _ in workspace_path.rglob('*') if _.is_file())
-    
+
     # Delete all files in the directory
     failed_operations = []
-    
+
     def handle_error(e: Exception, path: Path, item_type: str):
         failed_operations.append({
             'type': item_type,
@@ -104,7 +104,7 @@ def clean_workspace_storage() -> dict:
                         os.chmod(file_path_str, stat.S_IWRITE)
                     else:
                         os.chmod(str(file_path), stat.S_IWRITE)
-                    
+
                     file_path.unlink(missing_ok=True)
                 except (OSError, PermissionError) as e:
                     handle_error(e, file_path, 'file')
@@ -115,7 +115,7 @@ def clean_workspace_storage() -> dict:
             key=lambda x: len(str(x).split(os.sep)),
             reverse=True
         )
-        
+
         for dir_path in dirs_to_delete:
             try:
                 # Try force delete first
@@ -128,10 +128,10 @@ def clean_workspace_storage() -> dict:
                         dir_path.rmdir()
             except (OSError, PermissionError) as e:
                 handle_error(e, dir_path, 'directory')
-    
+
     return {
         'backup_path': str(backup_path),
         'deleted_files_count': total_files,
         'failed_operations': failed_operations,
         'failed_compressions': failed_compressions
-    } 
+    }
