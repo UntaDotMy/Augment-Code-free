@@ -53,7 +53,7 @@ def move_to_release(exe_path):
         print(f"📋 Latest copy created: {latest_path}")
 
         # Show release folder contents
-        print(f"\n📁 Release folder contents:")
+        print("\n📁 Release folder contents:")
         for file in sorted(release_dir.glob("*.exe")):
             size_mb = file.stat().st_size / (1024 * 1024)
             print(f"   {file.name} ({size_mb:.1f} MB)")
@@ -121,7 +121,7 @@ def main():
                     cmd.append(f"--hidden-import={package}")
                     print(f"   Added: {package}")
 
-    # Additional hidden imports for pywebview
+    # Additional hidden imports for pywebview and our modules
     additional_imports = [
         "webview",
         "webview.platforms.winforms",
@@ -129,6 +129,17 @@ def main():
         "webview.platforms.edgechromium",
         "bottle",
         "jinja2",
+        # Our project modules
+        "augment_free",
+        "augment_free.api",
+        "augment_free.api.core",
+        "augment_free.api.handlers",
+        "augment_free.api.handlers.database",
+        "augment_free.api.handlers.telemetry",
+        "augment_free.api.handlers.workspace",
+        "augment_free.utils",
+        "augment_free.utils.device_codes",
+        "augment_free.utils.paths",
     ]
 
     for imp in additional_imports:

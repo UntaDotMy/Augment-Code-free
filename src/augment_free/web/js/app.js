@@ -119,7 +119,7 @@ async function checkAPIStatus() {
         const result = await pywebview.api.get_status();
         if (result.success) {
             elements.apiStatus.textContent = '✅ 就绪';
-            elements.apiStatus.style.background = 'rgba(40, 167, 69, 0.2)';
+            // elements.apiStatus.style.background = 'rgba(40, 167, 69, 0.2)';
         } else {
             elements.apiStatus.textContent = '❌ 错误';
             elements.apiStatus.style.background = 'rgba(220, 53, 69, 0.2)';

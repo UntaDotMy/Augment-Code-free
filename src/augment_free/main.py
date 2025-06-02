@@ -9,7 +9,12 @@ import sys
 import webview
 from pathlib import Path
 
-from .api.core import AugmentFreeAPI
+try:
+    # Try relative import first (for development)
+    from .api.core import AugmentFreeAPI
+except ImportError:
+    # Fall back to absolute import (for packaged executable)
+    from augment_free.api.core import AugmentFreeAPI
 
 # Windows-specific imports for icon setting
 if sys.platform == "win32":
@@ -136,7 +141,7 @@ def main():
         # Start webview (icon parameter only works on GTK/QT, not Windows)
         if sys.platform == "win32":
             # On Windows, start without icon parameter and set it manually
-            webview.start(debug=False)
+            webview.start(debug=True)
         else:
             # On Linux/Mac, use the icon parameter
             start_kwargs = {"debug": False}
