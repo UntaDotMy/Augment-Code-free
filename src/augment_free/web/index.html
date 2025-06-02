@@ -33,76 +33,79 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Left Panel - System Info -->
-            <div class="left-panel">
+            <!-- Combined Panel - System Info & Operations -->
+            <div class="combined-panel">
                 <div class="panel-card">
-                    <div class="panel-header">
-                        <h2>📁 系统信息</h2>
-                        <button class="refresh-btn" onclick="loadSystemInfo()" title="刷新信息">
-                            🔄
-                        </button>
-                    </div>
-                    <div class="system-info-grid" id="systemInfo">
-                        <div class="loading">正在加载系统信息...</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Panel - Operations -->
-            <div class="right-panel">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        <h2>🛠️ 清理操作</h2>
-                    </div>
-                    <div class="operations-container">
-                        <!-- Individual Operations -->
-                        <div class="operations-row">
-                            <div class="operation-item">
-                                <div class="operation-icon">🔑</div>
-                                <div class="operation-content">
-                                    <h3>修改 Telemetry ID</h3>
-                                    <p>重置设备 ID 和机器 ID，生成新的随机标识符</p>
-                                </div>
-                                <button class="operation-btn btn-primary" onclick="modifyTelemetry()" id="telemetryBtn">
-                                    执行
+                    <div class="combined-content">
+                        <!-- Left Section - System Info -->
+                        <div class="system-section">
+                            <div class="section-header">
+                                <h2>📁 系统信息</h2>
+                                <button class="refresh-btn" onclick="loadSystemInfo()" title="刷新信息">
+                                    🔄
                                 </button>
                             </div>
-
-                            <div class="operation-item">
-                                <div class="operation-icon">🗃️</div>
-                                <div class="operation-content">
-                                    <h3>清理数据库</h3>
-                                    <p>清理 SQLite 数据库中包含 'augment' 的记录</p>
-                                </div>
-                                <button class="operation-btn btn-primary" onclick="cleanDatabase()" id="databaseBtn">
-                                    执行
-                                </button>
-                            </div>
-
-                            <div class="operation-item">
-                                <div class="operation-icon">💾</div>
-                                <div class="operation-content">
-                                    <h3>清理工作区</h3>
-                                    <p>清理工作区存储文件和目录</p>
-                                </div>
-                                <button class="operation-btn btn-primary" onclick="cleanWorkspace()" id="workspaceBtn">
-                                    执行
-                                </button>
+                            <div class="system-info-compact" id="systemInfo">
+                                <div class="loading">正在加载系统信息...</div>
                             </div>
                         </div>
 
-                        <!-- Quick Action -->
-                        <div class="quick-action">
-                            <div class="quick-action-content">
-                                <div class="quick-action-icon">🚀</div>
-                                <div class="quick-action-text">
-                                    <h3>一键清理</h3>
-                                    <p>执行所有清理操作（推荐）</p>
+                        <!-- Right Section - Operations -->
+                        <div class="operations-section">
+                            <div class="section-header">
+                                <h2>🛠️ 清理操作</h2>
+                            </div>
+                            <div class="operations-compact">
+                                <!-- Individual Operations -->
+                                <div class="operations-grid-compact">
+                                    <div class="operation-item-compact">
+                                        <div class="operation-icon">🔑</div>
+                                        <div class="operation-content">
+                                            <h3>重置机器码</h3>
+                                            <p>重置设备 ID 和机器 ID，生成新的随机标识符</p>
+                                        </div>
+                                        <button class="operation-btn btn-primary" onclick="modifyTelemetry()" id="telemetryBtn">
+                                            重置机器码
+                                        </button>
+                                    </div>
+
+                                    <div class="operation-item-compact">
+                                        <div class="operation-icon">🗃️</div>
+                                        <div class="operation-content">
+                                            <h3>清理数据库</h3>
+                                            <p>清理 SQLite 数据库中包含 'augment' 的记录</p>
+                                        </div>
+                                        <button class="operation-btn btn-primary" onclick="cleanDatabase()" id="databaseBtn">
+                                            清理数据库
+                                        </button>
+                                    </div>
+
+                                    <div class="operation-item-compact">
+                                        <div class="operation-icon">💾</div>
+                                        <div class="operation-content">
+                                            <h3>清理工作区</h3>
+                                            <p>清理工作区存储文件和目录</p>
+                                        </div>
+                                        <button class="operation-btn btn-primary" onclick="cleanWorkspace()" id="workspaceBtn">
+                                            清理工作区
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Action -->
+                                <div class="quick-action-compact">
+                                    <div class="quick-action-content">
+                                        <div class="quick-action-icon">🚀</div>
+                                        <div class="quick-action-text">
+                                            <h3>一键清理</h3>
+                                            <p>执行所有清理操作（推荐）</p>
+                                        </div>
+                                    </div>
+                                    <button class="quick-action-btn" onclick="runAllOperations()" id="allBtn">
+                                        立即执行
+                                    </button>
                                 </div>
                             </div>
-                            <button class="quick-action-btn" onclick="runAllOperations()" id="allBtn">
-                                立即执行
-                            </button>
                         </div>
                     </div>
                 </div>
