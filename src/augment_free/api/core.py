@@ -4,10 +4,12 @@ Core API class for Free AugmentCode pywebview application.
 This module provides the main API interface between the frontend and backend.
 """
 
+import json
+import os
 import traceback
 import webbrowser
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from .handlers import modify_telemetry_ids, clean_augment_data, clean_workspace_storage
 from ..utils.paths import (
@@ -32,6 +34,8 @@ class AugmentFreeAPI:
         """Initialize the API."""
         self.status = "ready"
         self.editor_type = "VSCodium"  # Default editor type
+        self._config_dir = self._get_config_dir()
+        self._first_run_file = self._config_dir / ".augment_free_first_run"
 
     def set_editor_type(self, editor_type: str) -> Dict[str, Any]:
         """
@@ -267,4 +271,69 @@ class AugmentFreeAPI:
                 "success": False,
                 "error": str(e),
                 "message": f"Failed to open {url}"
+            }
+
+    def _get_config_dir(self) -> Path:
+        """
+        Get the configuration directory for storing app settings.
+
+        Returns:
+            Path: Configuration directory path
+        """
+        try:
+            # Use user's home directory for config
+            home_dir = Path.home()
+            config_dir = home_dir / ".augment_free"
+
+            # Create directory if it doesn't exist
+            config_dir.mkdir(exist_ok=True)
+
+            return config_dir
+        except Exception:
+            # Fallback to current directory
+            return Path(".")
+
+    def is_first_run(self) -> Dict[str, Any]:
+        """
+        Check if this is the first time running the application.
+
+        Returns:
+            dict: Result with first_run boolean
+        """
+        try:
+            is_first = not self._first_run_file.exists()
+
+            return {
+                "success": True,
+                "data": {"is_first_run": is_first},
+                "message": "First run check completed"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to check first run status"
+            }
+
+    def mark_first_run_complete(self) -> Dict[str, Any]:
+        """
+        Mark that the first run has been completed.
+
+        Returns:
+            dict: Operation result
+        """
+        try:
+            # Create the marker file
+            self._first_run_file.touch()
+
+            return {
+                "success": True,
+                "data": {"marked": True},
+                "message": "First run marked as complete"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to mark first run as complete"
             }

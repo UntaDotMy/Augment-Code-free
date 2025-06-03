@@ -377,10 +377,16 @@ function formatResultData(data) {
 }
 
 // Check if this is the first time using the app
-function checkFirstTimeUse() {
+async function checkFirstTimeUse() {
     try {
-        const hasSeenAbout = localStorage.getItem('augment-free-seen-about');
-        if (!hasSeenAbout) {
+        // Check if pywebview is available
+        if (typeof pywebview === 'undefined') {
+            console.log('PyWebView not ready, skipping first time check');
+            return;
+        }
+
+        const result = await pywebview.api.is_first_run();
+        if (result.success && result.data.is_first_run) {
             // First time use - show about modal after a delay
             setTimeout(() => {
                 showAboutModal(true); // Pass true to indicate this is auto-show
@@ -388,17 +394,15 @@ function checkFirstTimeUse() {
         }
     } catch (error) {
         console.error('Error checking first time use:', error);
-        // If localStorage is not available, still show the modal
-        setTimeout(() => {
-            showAboutModal(true);
-        }, 1500);
     }
 }
 
 // Mark that user has seen the about modal
-function markAboutAsSeen() {
+async function markAboutAsSeen() {
     try {
-        localStorage.setItem('augment-free-seen-about', 'true');
+        if (typeof pywebview !== 'undefined') {
+            await pywebview.api.mark_first_run_complete();
+        }
     } catch (error) {
         console.error('Error saving about seen status:', error);
     }
