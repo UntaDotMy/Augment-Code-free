@@ -4,11 +4,10 @@ Core API class for Free AugmentCode pywebview application.
 This module provides the main API interface between the frontend and backend.
 """
 
-import json
 import traceback
 import webbrowser
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from .handlers import modify_telemetry_ids, clean_augment_data, clean_workspace_storage
 from ..utils.paths import (

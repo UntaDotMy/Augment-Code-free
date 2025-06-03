@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         checkAPIStatus();
         loadSystemInfo();
+
+        // Check if this is the first time using the app
+        checkFirstTimeUse();
     }, 500);
 });
 
@@ -373,8 +376,36 @@ function formatResultData(data) {
     return formatted;
 }
 
+// Check if this is the first time using the app
+function checkFirstTimeUse() {
+    try {
+        const hasSeenAbout = localStorage.getItem('augment-free-seen-about');
+        if (!hasSeenAbout) {
+            // First time use - show about modal after a delay
+            setTimeout(() => {
+                showAboutModal(true); // Pass true to indicate this is auto-show
+            }, 1500); // Wait 1.5 seconds for app to fully load
+        }
+    } catch (error) {
+        console.error('Error checking first time use:', error);
+        // If localStorage is not available, still show the modal
+        setTimeout(() => {
+            showAboutModal(true);
+        }, 1500);
+    }
+}
+
+// Mark that user has seen the about modal
+function markAboutAsSeen() {
+    try {
+        localStorage.setItem('augment-free-seen-about', 'true');
+    } catch (error) {
+        console.error('Error saving about seen status:', error);
+    }
+}
+
 // About Modal Functions
-function showAboutModal() {
+function showAboutModal(isAutoShow = false) {
     const modal = document.getElementById('aboutModal');
     if (modal) {
         modal.style.display = 'flex';
@@ -384,6 +415,11 @@ function showAboutModal() {
 
         // Load version info
         loadVersionInfo();
+
+        // If this is auto-show (first time), mark as seen
+        if (isAutoShow) {
+            markAboutAsSeen();
+        }
     }
 }
 
