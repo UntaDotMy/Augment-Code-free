@@ -95,5 +95,4 @@ jobs:
         draft: false
         prerelease: ${{ github.event.inputs.pre_release }}
         files: ${{ steps.find_versioned.outputs.versioned_file }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
