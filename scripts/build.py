@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
+# coding: utf-8
 """
 Build script for Free AugmentCode.
 Creates a standalone executable using PyInstaller.
 """
 
-import os
 import sys
 import shutil
 from datetime import datetime
@@ -17,7 +16,7 @@ sys.path.insert(0, str(project_root / "src"))
 try:
     import PyInstaller.__main__
 except ImportError:
-    print("❌ PyInstaller not found. Installing...")
+    print("[ERROR] PyInstaller not found. Installing...")
     import subprocess
     subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)
     import PyInstaller.__main__
@@ -25,7 +24,7 @@ except ImportError:
 
 def move_to_release(exe_path):
     """Move the built executable to the release folder with timestamp."""
-    print("📦 Moving executable to release folder...")
+    print("[INFO] Moving executable to release folder...")
 
     # Create release folder if it doesn't exist
     release_dir = project_root / "release"
@@ -45,21 +44,21 @@ def move_to_release(exe_path):
     try:
         # Copy the file to release folder
         shutil.copy2(exe_path, release_path)
-        print(f"✅ Executable moved to: {release_path}")
+        print(f"[SUCCESS] Executable moved to: {release_path}")
 
         # Also create a "latest" copy for convenience
         latest_path = release_dir / "AugmentFree_latest.exe"
         shutil.copy2(exe_path, latest_path)
-        print(f"📋 Latest copy created: {latest_path}")
+        print(f"[INFO] Latest copy created: {latest_path}")
 
         # Show release folder contents
-        print("\n📁 Release folder contents:")
+        print("\n[INFO] Release folder contents:")
         for file in sorted(release_dir.glob("*.exe")):
             size_mb = file.stat().st_size / (1024 * 1024)
             print(f"   {file.name} ({size_mb:.1f} MB)")
 
     except Exception as e:
-        print(f"❌ Failed to move executable: {e}")
+        print(f"[ERROR] Failed to move executable: {e}")
 
 
 def get_version_info():
@@ -80,7 +79,7 @@ def get_version_info():
 
 def main():
     """Build the application."""
-    print("🚀 Building Free AugmentCode...")
+    print("[INFO] Building Free AugmentCode...")
 
     # Paths
     main_script = project_root / "src" / "augment_free" / "main.py"
@@ -106,13 +105,13 @@ def main():
             f"--icon={icon_file}",  # Set application icon
             f"--add-data={icon_file};.",  # Include icon file in bundle
         ])
-        print(f"📎 Adding icon: {icon_file}")
+        print(f"[INFO] Adding icon: {icon_file}")
     else:
-        print("⚠️  Icon file not found, building without icon")
+        print("[WARNING] Icon file not found, building without icon")
 
     # Add hidden imports from requirements.txt
     if requirements_file.exists():
-        print("📦 Adding dependencies from requirements.txt...")
+        print("[INFO] Adding dependencies from requirements.txt...")
         with open(requirements_file, "r", encoding="utf-8") as reader:
             for line in reader:
                 line = line.strip()
@@ -145,22 +144,22 @@ def main():
     for imp in additional_imports:
         cmd.append(f"--hidden-import={imp}")
 
-    print("🔧 Running PyInstaller...")
+    print("[INFO] Running PyInstaller...")
     print(f"Command: {' '.join(cmd)}")
 
     try:
         PyInstaller.__main__.run(cmd)
-        print("✅ Build completed successfully!")
+        print("[SUCCESS] Build completed successfully!")
 
         # Move to release folder
         dist_exe = project_root / "dist" / "AugmentFree.exe"
         if dist_exe.exists():
             move_to_release(dist_exe)
         else:
-            print("⚠️  Executable not found in dist folder")
+            print("[WARNING] Executable not found in dist folder")
 
     except Exception as e:
-        print(f"❌ Build failed: {e}")
+        print(f"[ERROR] Build failed: {e}")
         sys.exit(1)
 
 

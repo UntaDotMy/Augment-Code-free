@@ -49,7 +49,10 @@ jobs:
 
     - name: Build application
       run: |
-        python scripts/build.py
+        # Set UTF-8 encoding for Windows console
+        $env:PYTHONIOENCODING = "utf-8"
+        uv run python scripts/build.py
+      shell: powershell
 
     - name: Get version from pyproject.toml
       id: get_version
