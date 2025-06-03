@@ -41,11 +41,11 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync
+        uv sync --index-url https://pypi.org/simple/ || uv sync --index-url https://pypi.douban.com/simple/
 
     - name: Install PyInstaller
       run: |
-        uv pip install pyinstaller
+        uv pip install pyinstaller --index-url https://pypi.org/simple/ || uv pip install pyinstaller --index-url https://pypi.douban.com/simple/
 
     - name: Build application
       run: |
