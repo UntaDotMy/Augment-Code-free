@@ -1,0 +1,96 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      pre_release:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install UPX
+      run: |
+          choco install upx -y
+      shell: cmd
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+
+    - name: Install dependencies
+      run: |
+        uv sync
+
+    - name: Install PyInstaller
+      run: |
+        uv pip install pyinstaller
+
+    - name: Build application
+      run: |
+        python scripts/build.py
+
+    - name: Get version from pyproject.toml
+      id: get_version
+      run: |
+        $version = (Select-String -Path "pyproject.toml" -Pattern 'version = "(.+)"').Matches[0].Groups[1].Value
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "Current version: $version"
+      shell: powershell
+
+    - name: Check if release folder exists
+      run: |
+        if (Test-Path "release") {
+          echo "Release folder exists"
+          Get-ChildItem release -Name
+        } else {
+          echo "Release folder not found"
+          exit 1
+        }
+      shell: powershell
+
+    - name: Find versioned executable
+      id: find_versioned
+      run: |
+        $versionedFile = Get-ChildItem release -Filter "AugmentFree_v${{ steps.get_version.outputs.version }}_*.exe" | Select-Object -First 1
+        if ($versionedFile) {
+          echo "versioned_file=$($versionedFile.FullName)" >> $env:GITHUB_OUTPUT
+          echo "Found versioned file: $($versionedFile.Name)"
+        } else {
+          echo "No versioned file found"
+          exit 1
+        }
+      shell: powershell
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ steps.get_version.outputs.version }}
+        name: Free AugmentCode v${{ steps.get_version.outputs.version }}
+        body: ""
+        draft: false
+        prerelease: ${{ github.event.inputs.pre_release }}
+        files: ${{ steps.find_versioned.outputs.versioned_file }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
