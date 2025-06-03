@@ -6,6 +6,8 @@ This module provides the main API interface between the frontend and backend.
 
 import json
 import traceback
+import webbrowser
+from pathlib import Path
 from typing import Dict, Any, Optional
 
 from .handlers import modify_telemetry_ids, clean_augment_data, clean_workspace_storage
@@ -204,3 +206,66 @@ class AugmentFreeAPI:
             "data": {"status": self.status},
             "message": "API is ready"
         }
+
+    def get_version_info(self) -> Dict[str, Any]:
+        """
+        Get application version information.
+
+        Returns:
+            dict: Version information from pyproject.toml
+        """
+        try:
+            # Try to find pyproject.toml
+            current_dir = Path(__file__).parent
+            project_root = current_dir.parent.parent.parent
+            pyproject_file = project_root / "pyproject.toml"
+
+            version = "0.1.0"  # Default version
+
+            if pyproject_file.exists():
+                with open(pyproject_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if line.strip().startswith("version"):
+                            # Extract version from line like: version = "0.1.0"
+                            version = line.split("=")[1].strip().strip('"').strip("'")
+                            break
+
+            return {
+                "success": True,
+                "data": {
+                    "version": version,
+                    "name": "Free AugmentCode",
+                    "author": "vagmr"
+                },
+                "message": "Version information retrieved successfully"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to retrieve version information"
+            }
+
+    def open_external_link(self, url: str) -> Dict[str, Any]:
+        """
+        Open an external link in the default browser.
+
+        Args:
+            url (str): URL to open
+
+        Returns:
+            dict: Operation result
+        """
+        try:
+            webbrowser.open(url)
+            return {
+                "success": True,
+                "data": {"url": url},
+                "message": f"Opened {url} in browser"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"Failed to open {url}"
+            }

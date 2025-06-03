@@ -372,3 +372,96 @@ function formatResultData(data) {
 
     return formatted;
 }
+
+// About Modal Functions
+function showAboutModal() {
+    const modal = document.getElementById('aboutModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
+
+        // Load version info
+        loadVersionInfo();
+    }
+}
+
+function hideAboutModal() {
+    const modal = document.getElementById('aboutModal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+}
+
+// Load version information
+async function loadVersionInfo() {
+    try {
+        if (typeof pywebview !== 'undefined') {
+            const result = await pywebview.api.get_version_info();
+            if (result.success && result.data) {
+                const versionElement = document.getElementById('appVersion');
+                if (versionElement) {
+                    versionElement.textContent = `v${result.data.version}`;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load version info:', error);
+    }
+}
+
+// Open external links
+async function openGitHubRepo() {
+    try {
+        if (typeof pywebview !== 'undefined') {
+            await pywebview.api.open_external_link('https://github.com/vagmr/Augment-free');
+        }
+    } catch (error) {
+        console.error('Failed to open GitHub repo:', error);
+        // Fallback: try to open in browser
+        window.open('https://github.com/vagmr/Augment-free', '_blank');
+    }
+}
+
+async function openGitHubReleases() {
+    try {
+        if (typeof pywebview !== 'undefined') {
+            await pywebview.api.open_external_link('https://github.com/vagmr/Augment-free/releases');
+        }
+    } catch (error) {
+        console.error('Failed to open GitHub releases:', error);
+        // Fallback: try to open in browser
+        window.open('https://github.com/vagmr/Augment-free/releases', '_blank');
+    }
+}
+
+async function openGitHubIssues() {
+    try {
+        if (typeof pywebview !== 'undefined') {
+            await pywebview.api.open_external_link('https://github.com/vagmr/Augment-free/issues');
+        }
+    } catch (error) {
+        console.error('Failed to open GitHub issues:', error);
+        // Fallback: try to open in browser
+        window.open('https://github.com/vagmr/Augment-free/issues', '_blank');
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('aboutModal');
+    if (modal && event.target === modal) {
+        hideAboutModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        hideAboutModal();
+    }
+});

@@ -104,6 +104,18 @@ AugmentCode Free is a simple GUI tool for cleaning AugmentCode-related data, hel
    ```
 4. Make your changes
 
+## ⚠️ Disclaimer
+
+**Use at Your Own Risk:** This tool is for educational and research purposes only. Users assume all risks associated with its use.
+
+**Data Safety:** Please ensure important data is backed up before use. The author is not responsible for any data loss.
+
+**Compliance:** Please comply with relevant software terms of use and local laws and regulations.
+
+**No Warranty:** This software is provided "as is" without any express or implied warranties.
+
+**Commercial Use:** All commercial sales are unrelated to the author. Please obtain from official channels.
+
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) file for details.

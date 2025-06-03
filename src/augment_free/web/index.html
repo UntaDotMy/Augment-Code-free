@@ -28,6 +28,9 @@
                             <option value="Code">💙 VS Code</option>
                         </select>
                     </div>
+                    <button class="about-btn" onclick="showAboutModal()" title="关于">
+                        ℹ️
+                    </button>
                 </div>
             </div>
         </header>
@@ -145,6 +148,47 @@
                 </div>
             </div>
         </footer>
+    </div>
+
+    <!-- About Modal -->
+    <div class="modal-overlay" id="aboutModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🐱 关于 Free AugmentCode</h2>
+                <button class="modal-close" onclick="hideAboutModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="about-info">
+                    <div class="about-section">
+                        <h3>📋 项目信息</h3>
+                        <p><strong>版本:</strong> <span id="appVersion">v0.1.0</span></p>
+                        <p><strong>作者:</strong> vagmr</p>
+                        <p><strong>描述:</strong> 用于清理 AugmentCode 相关数据的现代化 GUI 工具</p>
+                    </div>
+
+                    <div class="about-section">
+                        <h3>🔗 相关链接</h3>
+                        <div class="link-buttons">
+                            <button class="link-btn" onclick="openGitHubRepo()">
+                                📂 GitHub 仓库
+                            </button>
+                            <button class="link-btn" onclick="openGitHubReleases()">
+                                📦 下载最新版本
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="about-section">
+                        <h3>⚠️ 免责声明</h3>
+                        <p><strong>使用风险自负：</strong>本工具仅供学习和研究目的使用，使用者需自行承担使用风险。</p>
+                        <p><strong>数据安全：</strong>使用前请确保重要数据已备份，作者不对任何数据丢失负责。</p>
+                        <p><strong>合规使用：</strong>请遵守相关软件的使用条款和当地法律法规。</p>
+                        <p><strong>无担保：</strong>本软件按"现状"提供，不提供任何明示或暗示的担保。</p>
+                        <p><strong>商业使用：</strong>本项目采用MIT开源协议，所有商业售卖行为均与本人无关</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Loading Overlay -->
