@@ -112,7 +112,7 @@ def main():
 
     # Create webview window
     window_kwargs = {
-        "title": "Free AugmentCode",
+        "title": "Augment-Code-Free",
         "url": index_path,
         "js_api": api,
         "width": 1000,

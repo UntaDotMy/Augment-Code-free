@@ -11,7 +11,14 @@ import webbrowser
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from .handlers import modify_telemetry_ids, clean_augment_data, clean_workspace_storage
+from .handlers import (
+    modify_telemetry_ids,
+    clean_augment_data,
+    clean_workspace_storage,
+    modify_jetbrains_ids,
+    get_jetbrains_config_dir,
+    get_jetbrains_info
+)
 from ..utils.paths import (
     get_home_dir,
     get_app_data_dir,
@@ -35,31 +42,31 @@ class AugmentFreeAPI:
         """Initialize the API."""
         self.status = "ready"
         self.editor_type = "VSCodium"  # Default editor type
+        self.current_ide_info = None  # Store current IDE information
         self._config_dir = self._get_config_dir()
         self._first_run_file = self._config_dir / ".augment_free_first_run"
 
-    def set_editor_type(self, editor_type: str) -> Dict[str, Any]:
+    def set_editor_type(self, editor_name: str, ide_info: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Set the editor type for operations.
 
         Args:
-            editor_type (str): Editor type, either "VSCodium" or "Code"
+            editor_name (str): Editor name (e.g., "VSCodium", "Code", "IntelliJ IDEA")
+            ide_info (dict): Optional IDE information from detection
 
         Returns:
             dict: Operation result
         """
-        if editor_type not in ["VSCodium", "Code"]:
-            return {
-                "success": False,
-                "error": "Invalid editor type. Must be 'VSCodium' or 'Code'",
-                "message": "Invalid editor type"
-            }
+        self.editor_type = editor_name
+        self.current_ide_info = ide_info
 
-        self.editor_type = editor_type
         return {
             "success": True,
-            "data": {"editor_type": self.editor_type},
-            "message": f"Editor type set to {editor_type}"
+            "data": {
+                "editor_type": self.editor_type,
+                "ide_info": self.current_ide_info
+            },
+            "message": f"Editor type set to {editor_name}"
         }
 
     def get_system_info(self) -> Dict[str, Any]:
@@ -70,17 +77,47 @@ class AugmentFreeAPI:
             dict: System information including all relevant paths
         """
         try:
-            return {
-                "success": True,
-                "data": {
-                    "home_dir": get_home_dir(),
-                    "app_data_dir": get_app_data_dir(),
+            # Determine IDE type
+            ide_type = "vscode"  # Default
+            if self.current_ide_info:
+                ide_type = self.current_ide_info.get("ide_type", "vscode")
+
+            data = {
+                "home_dir": get_home_dir(),
+                "app_data_dir": get_app_data_dir(),
+                "editor_type": self.editor_type,
+                "ide_type": ide_type,
+            }
+
+            if ide_type == "jetbrains":
+                # JetBrains IDE paths
+                jetbrains_config = get_jetbrains_config_dir()
+                if jetbrains_config:
+                    jetbrains_info = get_jetbrains_info(jetbrains_config)
+                    data.update({
+                        "jetbrains_config_path": jetbrains_config,
+                        "jetbrains_info": jetbrains_info,
+                        "permanent_device_id_path": os.path.join(jetbrains_config, "PermanentDeviceId"),
+                        "permanent_user_id_path": os.path.join(jetbrains_config, "PermanentUserId"),
+                    })
+                else:
+                    data.update({
+                        "jetbrains_config_path": "未找到",
+                        "permanent_device_id_path": "未找到",
+                        "permanent_user_id_path": "未找到",
+                    })
+            else:
+                # VSCode series paths
+                data.update({
                     "storage_path": get_storage_path(self.editor_type),
                     "db_path": get_db_path(self.editor_type),
                     "machine_id_path": get_machine_id_path(self.editor_type),
                     "workspace_storage_path": get_workspace_storage_path(self.editor_type),
-                    "editor_type": self.editor_type,
-                },
+                })
+
+            return {
+                "success": True,
+                "data": data,
                 "message": "System information retrieved successfully"
             }
         except Exception as e:
@@ -92,18 +129,41 @@ class AugmentFreeAPI:
 
     def modify_telemetry(self) -> Dict[str, Any]:
         """
-        Modify telemetry IDs.
+        Modify telemetry IDs based on IDE type.
 
         Returns:
             dict: Operation result with backup information and new IDs
         """
         try:
-            result = modify_telemetry_ids(self.editor_type)
-            return {
-                "success": True,
-                "data": result,
-                "message": "Telemetry IDs modified successfully"
-            }
+            # Determine IDE type
+            ide_type = "vscode"  # Default
+            if self.current_ide_info:
+                ide_type = self.current_ide_info.get("ide_type", "vscode")
+
+            if ide_type == "jetbrains":
+                # Handle JetBrains IDE
+                jetbrains_config = get_jetbrains_config_dir()
+                if not jetbrains_config:
+                    return {
+                        "success": False,
+                        "error": "JetBrains配置目录未找到",
+                        "message": "无法找到JetBrains配置目录"
+                    }
+
+                result = modify_jetbrains_ids(jetbrains_config)
+                return {
+                    "success": result["success"],
+                    "data": result.get("data", {}),
+                    "message": result.get("message", "JetBrains ID处理完成")
+                }
+            else:
+                # Handle VSCode series
+                result = modify_telemetry_ids(self.editor_type)
+                return {
+                    "success": True,
+                    "data": result,
+                    "message": "Telemetry IDs modified successfully"
+                }
         except Exception as e:
             return {
                 "success": False,
@@ -158,39 +218,47 @@ class AugmentFreeAPI:
 
     def run_all_operations(self) -> Dict[str, Any]:
         """
-        Run all cleaning operations in sequence.
+        Run all cleaning operations in sequence based on IDE type.
 
         Returns:
             dict: Combined results from all operations
         """
+        # Determine IDE type
+        ide_type = "vscode"  # Default
+        if self.current_ide_info:
+            ide_type = self.current_ide_info.get("ide_type", "vscode")
+
         results = {
             "telemetry": None,
-            "database": None,
-            "workspace": None,
             "overall_success": True,
-            "errors": []
+            "errors": [],
+            "ide_type": ide_type
         }
 
-        # Modify telemetry IDs
+        # Always modify telemetry IDs (works for both VSCode and JetBrains)
         telemetry_result = self.modify_telemetry()
         results["telemetry"] = telemetry_result
         if not telemetry_result["success"]:
             results["overall_success"] = False
-            results["errors"].append(f"Telemetry: {telemetry_result['error']}")
+            results["errors"].append(f"Telemetry: {telemetry_result.get('error', 'Unknown error')}")
 
-        # Clean database
-        database_result = self.clean_database()
-        results["database"] = database_result
-        if not database_result["success"]:
-            results["overall_success"] = False
-            results["errors"].append(f"Database: {database_result['error']}")
+        if ide_type == "vscode":
+            # VSCode series: also clean database and workspace
+            database_result = self.clean_database()
+            results["database"] = database_result
+            if not database_result["success"]:
+                results["overall_success"] = False
+                results["errors"].append(f"Database: {database_result.get('error', 'Unknown error')}")
 
-        # Clean workspace
-        workspace_result = self.clean_workspace()
-        results["workspace"] = workspace_result
-        if not workspace_result["success"]:
-            results["overall_success"] = False
-            results["errors"].append(f"Workspace: {workspace_result['error']}")
+            workspace_result = self.clean_workspace()
+            results["workspace"] = workspace_result
+            if not workspace_result["success"]:
+                results["overall_success"] = False
+                results["errors"].append(f"Workspace: {workspace_result.get('error', 'Unknown error')}")
+        else:
+            # JetBrains: only telemetry modification is needed
+            results["database"] = {"success": True, "message": "不适用于JetBrains IDE"}
+            results["workspace"] = {"success": True, "message": "不适用于JetBrains IDE"}
 
         return {
             "success": results["overall_success"],
@@ -378,4 +446,67 @@ class AugmentFreeAPI:
                 "success": False,
                 "error": str(e),
                 "message": f"获取默认IDE列表失败: {str(e)}"
+            }
+
+    def get_supported_operations(self) -> Dict[str, Any]:
+        """
+        Get supported operations for the current IDE type.
+
+        Returns:
+            dict: List of supported operations
+        """
+        try:
+            # Determine IDE type
+            ide_type = "vscode"  # Default
+            if self.current_ide_info:
+                ide_type = self.current_ide_info.get("ide_type", "vscode")
+
+            if ide_type == "jetbrains":
+                operations = [
+                    {
+                        "id": "telemetry",
+                        "name": "重置设备ID",
+                        "description": "重置JetBrains IDE的设备标识符",
+                        "icon": "🔑",
+                        "supported": True
+                    }
+                ]
+            else:
+                operations = [
+                    {
+                        "id": "telemetry",
+                        "name": "重置机器码",
+                        "description": "重置设备 ID 和机器 ID，生成新的随机标识符",
+                        "icon": "🔑",
+                        "supported": True
+                    },
+                    {
+                        "id": "database",
+                        "name": "清理数据库",
+                        "description": "清理 SQLite 数据库中包含 'augment' 的记录",
+                        "icon": "🗃️",
+                        "supported": True
+                    },
+                    {
+                        "id": "workspace",
+                        "name": "清理工作区",
+                        "description": "清理工作区存储文件和目录",
+                        "icon": "💾",
+                        "supported": True
+                    }
+                ]
+
+            return {
+                "success": True,
+                "data": {
+                    "ide_type": ide_type,
+                    "operations": operations
+                },
+                "message": f"获取{ide_type}支持的操作列表"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"获取支持操作失败: {str(e)}"
             }

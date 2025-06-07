@@ -1,8 +1,8 @@
-# AugmentCode Free
+# Augment-Code-Free
 
 **中文** | [English](README_EN.md)
 
-AugmentCode Free 是一个用于清理 AugmentCode 相关数据的简易Gui工具，避免账号为禁用，让你轻松享受free的AugmentCode。
+Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易Gui工具，避免账号被禁用，让你轻松享受free的AugmentCode。
 
 ## 界面预览
 
@@ -66,18 +66,18 @@ AugmentCode Free 是一个用于清理 AugmentCode 相关数据的简易Gui工�
 
 ### 使用可执行文件
 
-1. **AugmentCode插件退出原有账号**
+1. **Augment插件退出原有账号**
 2. **完全退出 VS Code或vscodium**
 3. **运行应用程序**：
    - 双击 `AugmentFree_latest.exe`
    - 或在命令行中运行：`./AugmentFree_latest.exe`
 4. **在 GUI 界面中选择需要的操作**
 5. **重新启动 VS Code或vscodium**
-6. **在 AugmentCode 插件中使用新的邮箱进行登录**
+6. **在 Augment 插件中使用新的邮箱进行登录**
 
 ### 从源码运行
 
-1. **AugmentCode插件退出原有账号**
+1. **Augment插件退出原有账号**
 2. **完全退出 VS Code或vscodium**
 3. **运行应用程序**：
    ```bash
@@ -89,7 +89,7 @@ AugmentCode Free 是一个用于清理 AugmentCode 相关数据的简易Gui工�
    ```
 4. **在 GUI 界面中选择需要的操作**
 5. **重新启动 Vs Code或vscodium**
-6. **在 AugmentCode 插件中使用新的邮箱进行登录**
+6. **在 Augment 插件中使用新的邮箱进行登录**
 
 
 

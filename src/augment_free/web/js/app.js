@@ -60,15 +60,24 @@ async function changeEditor() {
 
     if (!checkAPIAvailable()) return;
 
+    // Get IDE info from detected IDEs
+    let ideInfo = null;
+    const selectedIDE = detectedIDEs.find(ide => ide.name === selectedEditor);
+    if (selectedIDE) {
+        ideInfo = selectedIDE;
+    }
+
     // Update footer editor names immediately
-    updateFooterEditorNames(selectedEditor);
+    updateFooterEditorNames(selectedEditor, ideInfo);
 
     try {
-        const result = await pywebview.api.set_editor_type(selectedEditor);
+        const result = await pywebview.api.set_editor_type(selectedEditor, ideInfo);
         if (result.success) {
-            console.log(`Editor type changed to: ${selectedEditor}`);
+            console.log(`Editor type changed to: ${selectedEditor}`, ideInfo);
             // Reload system info to show new paths
             loadSystemInfo();
+            // Update operations based on IDE type
+            updateOperationsForIDE(ideInfo);
         } else {
             console.error('Failed to change editor type:', result.error);
             alert('切换编辑器失败: ' + result.error);
@@ -80,8 +89,17 @@ async function changeEditor() {
 }
 
 // Update footer editor names
-function updateFooterEditorNames(editorType) {
-    const editorName = editorType === 'Code' ? 'VS Code' : 'VSCodium';
+function updateFooterEditorNames(editorType, ideInfo = null) {
+    let editorName = editorType;
+
+    // Use display name if available from IDE info
+    if (ideInfo && ideInfo.display_name) {
+        editorName = ideInfo.display_name;
+    } else {
+        // Fallback for default names
+        editorName = editorType === 'Code' ? 'VS Code' : editorType;
+    }
+
     const footerEditorName1 = document.getElementById('footerEditorName1');
     const footerEditorName2 = document.getElementById('footerEditorName2');
 
@@ -177,13 +195,27 @@ async function loadSystemInfo() {
 
 // Display system information
 function displaySystemInfo(data) {
-    const infoItems = [
-        { label: '当前编辑器', value: data.editor_type || 'VSCodium', icon: '🎯' },
-        { label: 'Storage 文件', value: data.storage_path, icon: '💾' },
-        { label: '数据库文件', value: data.db_path, icon: '🗃️' },
-        { label: '机器 ID 文件', value: data.machine_id_path, icon: '🔑' },
-        { label: '工作区存储', value: data.workspace_storage_path, icon: '📁' }
-    ];
+    let infoItems = [];
+
+    // Common info
+    infoItems.push({ label: '当前编辑器', value: data.editor_type || 'VSCodium', icon: '🎯' });
+
+    if (data.ide_type === 'jetbrains') {
+        // JetBrains IDE info
+        infoItems.push(
+            { label: '配置目录', value: data.jetbrains_config_path || '未找到', icon: '📁' },
+            { label: '设备 ID 文件', value: data.permanent_device_id_path || '未找到', icon: '🔑' },
+            { label: '用户 ID 文件', value: data.permanent_user_id_path || '未找到', icon: '👤' }
+        );
+    } else {
+        // VSCode series info
+        infoItems.push(
+            { label: 'Storage 文件', value: data.storage_path, icon: '💾' },
+            { label: '数据库文件', value: data.db_path, icon: '🗃️' },
+            { label: '机器 ID 文件', value: data.machine_id_path, icon: '🔑' },
+            { label: '工作区存储', value: data.workspace_storage_path, icon: '📁' }
+        );
+    }
 
     elements.systemInfo.innerHTML = infoItems.map(item => `
         <div class="info-item">
@@ -558,7 +590,7 @@ async function detectIDEs() {
 
         // Hide status after 5 seconds
         setTimeout(() => {
-            detectStatus.className = 'detect-status';
+            detectStatus.textContent = 'By vagmr';
         }, 5000);
     }
 }
@@ -598,6 +630,9 @@ function updateEditorSelect(ides) {
     if (ides.length > 0) {
         editorSelect.value = ides[0].name;
         changeEditor();
+    } else {
+        // No IDEs detected, update operations for default VSCode
+        updateOperationsForIDE(null);
     }
 }
 
@@ -613,6 +648,78 @@ async function getDefaultIDEs() {
     } catch (error) {
         console.error('Error getting default IDEs:', error);
     }
+}
+
+// Update operations based on IDE type
+async function updateOperationsForIDE(ideInfo) {
+    try {
+        if (!checkAPIAvailable()) return;
+
+        const result = await pywebview.api.get_supported_operations();
+        if (result.success) {
+            updateOperationsUI(result.data);
+        }
+    } catch (error) {
+        console.error('Error getting supported operations:', error);
+    }
+}
+
+// Update operations UI based on supported operations
+function updateOperationsUI(data) {
+    const operationsGrid = document.querySelector('.operations-grid-compact');
+    if (!operationsGrid) return;
+
+    const operations = data.operations || [];
+    const ideType = data.ide_type || 'vscode';
+
+    // Clear existing operations
+    operationsGrid.innerHTML = '';
+
+    // Add supported operations
+    operations.forEach(op => {
+        if (op.supported) {
+            const operationHTML = `
+                <div class="operation-item-compact">
+                    <div class="operation-icon">${op.icon}</div>
+                    <div class="operation-content">
+                        <h3>${op.name}</h3>
+                        <p>${op.description}</p>
+                    </div>
+                    <button class="operation-btn btn-primary" onclick="${getOperationFunction(op.id)}()" id="${op.id}Btn">
+                        ${getOperationButtonText(op.id)}
+                    </button>
+                </div>
+            `;
+            operationsGrid.insertAdjacentHTML('beforeend', operationHTML);
+        }
+    });
+
+    // Update button references
+    elements.buttons.telemetry = document.getElementById('telemetryBtn');
+    elements.buttons.database = document.getElementById('databaseBtn');
+    elements.buttons.workspace = document.getElementById('workspaceBtn');
+
+    console.log(`Operations updated for ${ideType} IDE:`, operations);
+}
+
+// Get operation function name
+function getOperationFunction(operationId) {
+    const functionMap = {
+        'telemetry': 'modifyTelemetry',
+        'database': 'cleanDatabase',
+        'workspace': 'cleanWorkspace'
+    };
+    return functionMap[operationId] || 'modifyTelemetry';
+}
+
+// Get operation button text
+function getOperationButtonText(operationId) {
+    const textMap = {
+        'telemetry': '重置机器码',
+        'database': '清理数据库',
+        'workspace': '清理工作区'
+    };
+    return textMap[operationId] || '执行操作';
 }
 
 // Close modal when clicking outside
