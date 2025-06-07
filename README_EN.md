@@ -4,6 +4,11 @@
 
 AugmentCode Free is a simple GUI tool for cleaning AugmentCode-related data, helping you avoid account bans and enjoy free AugmentCode effortlessly.
 
+- **Auto Scan** - One-click detection of all supported IDEs installed on the system
+- **Cross-Platform Support** - Compatible with Windows, macOS, Linux
+- **Dynamic Adaptation** - Automatically adjusts available operations based on selected IDE type
+
+
 ## Interface Preview
 
 <div align="center">
@@ -23,19 +28,28 @@ AugmentCode Free is a simple GUI tool for cleaning AugmentCode-related data, hel
   - Intuitive interface design
   - Real-time operation feedback
 
-- 📝 **Telemetry ID Management**
-  - Reset device ID and machine ID
-  - Automatic backup of original data
-  - Generate new random IDs
+- 🔍 **Smart IDE Detection**
+  - Automatically scan installed IDEs on the system
+  - Support for VSCode series and JetBrains series
+  - Cross-platform compatibility (Windows, macOS, Linux)
+  - Dynamic operation interface adaptation
 
-- 🗃️ **Database Cleaning**
+- 💙 **VSCode Series Support (VSCode, VSCodium, Cursor, etc.)**
+  - Reset device ID and machine ID (Telemetry)
   - Clean specific records in SQLite database
-  - Automatic database file backup
-  - Remove records containing 'augment' keywords
-
-- 💾 **Workspace Storage Management**
   - Clean workspace storage files
-  - Automatic workspace data backup
+  - Automatic backup of original data
+
+- 🧠 **JetBrains Series Support (IDEA, PyCharm, GoLand, etc.)**
+  - Reset PermanentDeviceId and PermanentUserId
+  - Automatic file locking to prevent regeneration
+  - Cross-platform file permission management
+  - Support for all mainstream JetBrains IDEs
+
+- 🛡️ **Security Features**
+  - Automatic backup of important files before operations
+  - File locking mechanism to prevent accidental modifications
+  - Detailed operation logs and result feedback
 
 ## Installation
 
@@ -66,18 +80,18 @@ AugmentCode Free is a simple GUI tool for cleaning AugmentCode-related data, hel
 ### Using Executable
 
 1. **Log out from AugmentCode plugin**
-2. **Completely exit VS Code or VSCodium**
+2. **Completely exit the selected editor**
 3. **Run the application**:
    - Double-click `AugmentFree_latest.exe`
    - Or run in command line: `./AugmentFree_latest.exe`
 4. **Select desired operations in the GUI interface**
-5. **Restart VS Code or VSCodium**
+5. **Restart the selected editor**
 6. **Log in with a new email in AugmentCode plugin**
 
 ### Running from Source
 
 1. **Log out from AugmentCode plugin**
-2. **Completely exit VS Code or VSCodium**
+2. **Completely exit the selected editor**
 3. **Run the application**:
    ```bash
    # Using run.py script (recommended)
@@ -87,7 +101,7 @@ AugmentCode Free is a simple GUI tool for cleaning AugmentCode-related data, hel
    python -m augment_free.main
    ```
 4. **Select desired operations in the GUI interface**
-5. **Restart VS Code or VSCodium**
+5. **Restart the selected editor**
 6. **Log in with a new email in AugmentCode plugin**
 
 

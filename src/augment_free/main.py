@@ -20,7 +20,6 @@ except ImportError:
 if sys.platform == "win32":
     try:
         import ctypes
-        from ctypes import wintypes
     except ImportError:
         ctypes = None
 

@@ -6,6 +6,7 @@ Creates a standalone executable using PyInstaller.
 
 import sys
 import shutil
+import platform
 from datetime import datetime
 from pathlib import Path
 
@@ -30,14 +31,26 @@ def move_to_release(exe_path):
     release_dir = project_root / "release"
     release_dir.mkdir(exist_ok=True)
 
-    # Generate filename with timestamp
+    # Generate filename with timestamp and platform info
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     version_info = get_version_info()
+    current_platform = platform.system().lower()
+
+    # Determine file extension based on platform
+    if current_platform == "windows":
+        ext = ".exe"
+        platform_suffix = "windows"
+    elif current_platform == "darwin":
+        ext = ""
+        platform_suffix = "macos"
+    else:
+        ext = ""
+        platform_suffix = "linux"
 
     if version_info:
-        release_filename = f"AugmentFree_v{version_info}_{timestamp}.exe"
+        release_filename = f"AugmentFree_v{version_info}_{platform_suffix}_{timestamp}{ext}"
     else:
-        release_filename = f"AugmentFree_{timestamp}.exe"
+        release_filename = f"AugmentFree_{platform_suffix}_{timestamp}{ext}"
 
     release_path = release_dir / release_filename
 
@@ -47,15 +60,23 @@ def move_to_release(exe_path):
         print(f"[SUCCESS] Executable moved to: {release_path}")
 
         # Also create a "latest" copy for convenience
-        latest_path = release_dir / "AugmentFree_latest.exe"
+        latest_filename = f"AugmentFree_latest_{platform_suffix}{ext}"
+        latest_path = release_dir / latest_filename
         shutil.copy2(exe_path, latest_path)
         print(f"[INFO] Latest copy created: {latest_path}")
 
         # Show release folder contents
         print("\n[INFO] Release folder contents:")
-        for file in sorted(release_dir.glob("*.exe")):
-            size_mb = file.stat().st_size / (1024 * 1024)
-            print(f"   {file.name} ({size_mb:.1f} MB)")
+        # Look for both .exe files (Windows) and files without extension (macOS/Linux)
+        patterns = ["*.exe", "AugmentFree_*"] if current_platform == "windows" else ["AugmentFree_*"]
+        all_files = []
+        for pattern in patterns:
+            all_files.extend(release_dir.glob(pattern))
+
+        for file in sorted(set(all_files)):
+            if file.is_file():
+                size_mb = file.stat().st_size / (1024 * 1024)
+                print(f"   {file.name} ({size_mb:.1f} MB)")
 
     except Exception as e:
         print(f"[ERROR] Failed to move executable: {e}")
@@ -87,6 +108,9 @@ def main():
     icon_file = project_root / "app.ico"
     requirements_file = project_root / "requirements.txt"
 
+    # Get current platform
+    current_platform = platform.system().lower()
+
     # PyInstaller command
     cmd = [
         str(main_script),
@@ -95,16 +119,30 @@ def main():
         "--onefile",  # Create single executable
         "--noconfirm",  # Replace output without asking
         "--distpath=./dist",  # Output directory
-        f"--add-data={web_dir};web",  # Include web files
-        "--noconsole",  # Hide console window (Windows)
     ]
+
+    # Platform-specific data inclusion
+    if current_platform == "windows":
+        cmd.extend([
+            f"--add-data={web_dir};web",  # Include web files (Windows)
+            "--noconsole",  # Hide console window (Windows)
+        ])
+    else:
+        cmd.extend([
+            f"--add-data={web_dir}:web",  # Include web files (macOS/Linux)
+            "--windowed",  # Hide console window (macOS/Linux)
+        ])
 
     # Add icon if it exists
     if icon_file.exists():
-        cmd.extend([
-            f"--icon={icon_file}",  # Set application icon
-            f"--add-data={icon_file};.",  # Include icon file in bundle
-        ])
+        cmd.append(f"--icon={icon_file}")  # Set application icon
+
+        # Platform-specific icon data inclusion
+        if current_platform == "windows":
+            cmd.append(f"--add-data={icon_file};.")  # Include icon file in bundle (Windows)
+        else:
+            cmd.append(f"--add-data={icon_file}:.")  # Include icon file in bundle (macOS/Linux)
+
         print(f"[INFO] Adding icon: {icon_file}")
     else:
         print("[WARNING] Icon file not found, building without icon")
@@ -152,11 +190,15 @@ def main():
         print("[SUCCESS] Build completed successfully!")
 
         # Move to release folder
-        dist_exe = project_root / "dist" / "AugmentFree.exe"
+        if current_platform == "windows":
+            dist_exe = project_root / "dist" / "AugmentFree.exe"
+        else:
+            dist_exe = project_root / "dist" / "AugmentFree"
+
         if dist_exe.exists():
             move_to_release(dist_exe)
         else:
-            print("[WARNING] Executable not found in dist folder")
+            print(f"[WARNING] Executable not found in dist folder: {dist_exe}")
 
     except Exception as e:
         print(f"[ERROR] Build failed: {e}")

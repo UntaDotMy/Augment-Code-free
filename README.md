@@ -4,6 +4,10 @@
 
 Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易Gui工具，避免账号被禁用，让你轻松享受free的AugmentCode。
 
+- **自动扫描** - 一键检测系统中已安装的所有支持IDE
+- **跨平台支持** - Windows、macOS、Linux 全平台兼容
+- **动态适配** - 根据选择的IDE类型自动调整可用操作
+
 ## 界面预览
 
 <div align="center">
@@ -23,19 +27,28 @@ Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易G
   - 直观的界面设计
   - 实时操作反馈
 
-- 📝 **Telemetry ID 管理**
-  - 重置设备 ID 和机器 ID
-  - 自动备份原始数据
-  - 生成新的随机 ID
+- 🔍 **智能 IDE 检测**
+  - 自动扫描系统中已安装的IDE
+  - 支持 VSCode 系列和 JetBrains 系列
+  - 跨平台兼容（Windows、macOS、Linux）
+  - 动态操作界面适配
 
-- 🗃️ **数据库清理**
+- 💙 **VSCode 系列支持(vscode，vscodium,cursor等)**
+  - 重置设备 ID 和机器 ID（Telemetry）
   - 清理 SQLite 数据库中的特定记录
-  - 自动备份数据库文件
-  - 删除包含 'augment' 关键字的记录
-
-- 💾 **工作区存储管理**
   - 清理工作区存储文件
-  - 自动备份工作区数据
+  - 自动备份原始数据
+
+- 🧠 **JetBrains 系列支持(idea,pycharm,goland等)**
+  - 重置 PermanentDeviceId 和 PermanentUserId
+  - 自动文件锁定防止重新生成
+  - 跨平台文件权限管理
+  - 支持所有主流 JetBrains IDE
+
+- 🛡️ **安全特性**
+  - 操作前自动备份重要文件
+  - 文件锁定机制防止意外修改
+  - 详细的操作日志和结果反馈
 
 
 ## 安装说明
@@ -67,18 +80,18 @@ Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易G
 ### 使用可执行文件
 
 1. **Augment插件退出原有账号**
-2. **完全退出 VS Code或vscodium**
+2. **完全退出选择的编辑器**
 3. **运行应用程序**：
    - 双击 `AugmentFree_latest.exe`
    - 或在命令行中运行：`./AugmentFree_latest.exe`
 4. **在 GUI 界面中选择需要的操作**
-5. **重新启动 VS Code或vscodium**
+5. **重新启动选择的编辑器**
 6. **在 Augment 插件中使用新的邮箱进行登录**
 
 ### 从源码运行
 
 1. **Augment插件退出原有账号**
-2. **完全退出 VS Code或vscodium**
+2. **完全退出选择的编辑器**
 3. **运行应用程序**：
    ```bash
    # 使用 run.py 脚本（推荐）
@@ -88,7 +101,7 @@ Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易G
    python -m augment_free.main
    ```
 4. **在 GUI 界面中选择需要的操作**
-5. **重新启动 Vs Code或vscodium**
+5. **重新启动选择的编辑器**
 6. **在 Augment 插件中使用新的邮箱进行登录**
 
 
