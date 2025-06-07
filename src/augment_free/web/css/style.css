@@ -97,13 +97,24 @@ html {
 .header-right {
     display: flex;
     align-items: center;
-    gap: 30px;
+    gap: 20px;
+    flex-wrap: wrap;
+    min-width: 0;
 }
 
 .status-indicator, .editor-selector {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+.editor-selector {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    min-width: 0;
 }
 
 .status-label, .editor-label {
@@ -607,13 +618,15 @@ html {
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     font-size: 0.9rem;
-    min-width: 120px;
+    min-width: 140px;
+    max-width: 200px;
     appearance: none;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
     background-position: right 8px center;
     background-size: 16px;
     padding-right: 32px;
+    flex-shrink: 1;
 }
 
 .editor-select:hover {
@@ -633,6 +646,84 @@ html {
     color: #2d3748;
     padding: 8px 12px;
     font-weight: 500;
+}
+
+/* Detect Button */
+.detect-btn {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(72, 187, 120, 0.2);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    min-width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.detect-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.detect-btn:hover::before {
+    left: 100%;
+}
+
+.detect-btn:hover {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.detect-btn:disabled {
+    background: #a0aec0;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.detect-btn:disabled::before {
+    display: none;
+}
+
+/* Detect Status */
+.detect-status {
+    font-size: 0.75rem;
+    color: #4a5568;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.detect-status.show {
+    opacity: 1;
+}
+
+.detect-status.success {
+    color: #38a169;
+}
+
+.detect-status.error {
+    color: #e53e3e;
 }
 
 /* Results Panel */
@@ -978,6 +1069,17 @@ html {
     .header-right {
         flex-direction: column;
         gap: 15px;
+        width: 100%;
+    }
+
+    .editor-selector {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .detect-status {
+        text-align: center;
     }
 
     .main-content {

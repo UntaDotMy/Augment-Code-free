@@ -2,6 +2,8 @@
 
 // Global state
 let isOperationRunning = false;
+let isDetecting = false;
+let detectedIDEs = [];
 
 // DOM elements
 const elements = {
@@ -42,8 +44,13 @@ function initializeElements() {
         telemetry: document.getElementById('telemetryBtn'),
         database: document.getElementById('databaseBtn'),
         workspace: document.getElementById('workspaceBtn'),
-        all: document.getElementById('allBtn')
+        all: document.getElementById('allBtn'),
+        detect: document.getElementById('detectBtn')
     };
+
+    // Other elements
+    elements.editorSelect = document.getElementById('editorSelect');
+    elements.detectStatus = document.getElementById('detectStatus');
 }
 
 // Change editor type
@@ -488,6 +495,123 @@ async function openGitHubIssues() {
         console.error('Failed to open GitHub issues:', error);
         // Fallback: try to open in browser
         window.open('https://github.com/vagmr/Augment-free/issues', '_blank');
+    }
+}
+
+// Detect IDEs function
+async function detectIDEs() {
+    if (isDetecting || isOperationRunning || !checkAPIAvailable()) return;
+
+    isDetecting = true;
+    const detectBtn = elements.buttons.detect;
+    const detectStatus = elements.detectStatus;
+
+    // Update button state
+    detectBtn.disabled = true;
+    detectBtn.textContent = '🔄';
+    detectBtn.title = '检测中...';
+
+    // Show status
+    detectStatus.textContent = '检测中...';
+    detectStatus.className = 'detect-status show';
+
+    try {
+        const result = await pywebview.api.detect_ides();
+
+        if (result.success) {
+            detectedIDEs = result.ides;
+            updateEditorSelect(result.ides);
+
+            // Show success status
+            detectStatus.textContent = `✅ 找到 ${result.count} 个IDE`;
+            detectStatus.className = 'detect-status show success';
+
+            // Update button
+            detectBtn.textContent = '🔍';
+            detectBtn.title = '重新检测IDE';
+
+            console.log('IDE detection successful:', result);
+        } else {
+            // Show error status
+            detectStatus.textContent = `❌ ${result.message}`;
+            detectStatus.className = 'detect-status show error';
+
+            // Reset button
+            detectBtn.textContent = '🔍';
+            detectBtn.title = '自动检测IDE';
+
+            console.error('IDE detection failed:', result);
+        }
+    } catch (error) {
+        console.error('Error detecting IDEs:', error);
+
+        // Show error status
+        detectStatus.textContent = '❌ 检测失败';
+        detectStatus.className = 'detect-status show error';
+
+        // Reset button
+        detectBtn.textContent = '🔍';
+        detectBtn.title = '自动检测IDE';
+    } finally {
+        detectBtn.disabled = false;
+        isDetecting = false;
+
+        // Hide status after 5 seconds
+        setTimeout(() => {
+            detectStatus.className = 'detect-status';
+        }, 5000);
+    }
+}
+
+// Update editor select with detected IDEs
+function updateEditorSelect(ides) {
+    const editorSelect = elements.editorSelect;
+    if (!editorSelect) return;
+
+    // Clear existing options
+    editorSelect.innerHTML = '';
+
+    if (ides.length === 0) {
+        // No IDEs detected, restore defaults
+        editorSelect.innerHTML = `
+            <option value="VSCodium">🔷 VSCodium</option>
+            <option value="Code">💙 VS Code</option>
+        `;
+        return;
+    }
+
+    // Add detected IDEs
+    ides.forEach(ide => {
+        const option = document.createElement('option');
+        option.value = ide.name;
+        option.textContent = `${ide.icon} ${ide.display_name}`;
+
+        // Add path info as title
+        if (ide.config_path) {
+            option.title = `路径: ${ide.config_path}`;
+        }
+
+        editorSelect.appendChild(option);
+    });
+
+    // Trigger change event to update system info
+    if (ides.length > 0) {
+        editorSelect.value = ides[0].name;
+        changeEditor();
+    }
+}
+
+// Get default IDEs (for reset)
+async function getDefaultIDEs() {
+    try {
+        if (!checkAPIAvailable()) return;
+
+        const result = await pywebview.api.get_default_ides();
+        if (result.success) {
+            updateEditorSelect(result.ides);
+        }
+    } catch (error) {
+        console.error('Error getting default IDEs:', error);
     }
 }
 

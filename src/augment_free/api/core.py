@@ -20,6 +20,7 @@ from ..utils.paths import (
     get_machine_id_path,
     get_workspace_storage_path,
 )
+from ..utils.ide_detector import detect_ides, IDEDetector
 
 
 class AugmentFreeAPI:
@@ -336,4 +337,45 @@ class AugmentFreeAPI:
                 "success": False,
                 "error": str(e),
                 "message": "Failed to mark first run as complete"
+            }
+
+    def detect_ides(self) -> Dict[str, Any]:
+        """
+        Detect all installed IDEs on the system.
+
+        Returns:
+            dict: Detection results with IDE list and summary
+        """
+        try:
+            result = detect_ides()
+            return result
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"IDE检测失败: {str(e)}"
+            }
+
+    def get_default_ides(self) -> Dict[str, Any]:
+        """
+        Get the default IDE list (VSCodium and VS Code).
+
+        Returns:
+            dict: Default IDE list
+        """
+        try:
+            detector = IDEDetector()
+            default_ides = detector.get_default_ides()
+
+            return {
+                "success": True,
+                "ides": [ide.to_dict() for ide in default_ides],
+                "count": len(default_ides),
+                "message": "默认IDE列表"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"获取默认IDE列表失败: {str(e)}"
             }
