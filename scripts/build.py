@@ -105,11 +105,18 @@ def main():
     # Paths
     main_script = project_root / "src" / "augment_free" / "main.py"
     web_dir = project_root / "src" / "augment_free" / "web"
-    icon_file = project_root / "app.ico"
     requirements_file = project_root / "requirements.txt"
 
     # Get current platform
     current_platform = platform.system().lower()
+
+    # Choose icon file based on platform
+    if current_platform == "windows":
+        icon_file = project_root / "app.ico"
+    elif current_platform == "darwin":
+        icon_file = project_root / "app.icns"
+    else:
+        icon_file = project_root / "app.ico"  # Default to .ico for Linux
 
     # PyInstaller command
     cmd = [
