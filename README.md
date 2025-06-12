@@ -2,6 +2,8 @@
 
 **中文** | [English](README_EN.md)
 
+[![GitHub downloads](https://img.shields.io/github/downloads/vagmr/Augment-Code-free/total)](https://github.com/vagmr/Augment-Code-free/releases)
+
 Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易Gui工具，避免账号被禁用，让你轻松享受free的AugmentCode。
 
 - **自动扫描** - 一键检测系统中已安装的所有支持IDE

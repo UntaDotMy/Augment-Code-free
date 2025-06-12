@@ -36,6 +36,9 @@ def move_to_release(exe_path):
     version_info = get_version_info()
     current_platform = platform.system().lower()
 
+    print(f"[DEBUG] Version info: {version_info}")
+    print(f"[DEBUG] Current platform: {current_platform}")
+
     # Determine file extension based on platform
     if current_platform == "windows":
         ext = ".exe"
@@ -88,13 +91,14 @@ def get_version_info():
         pyproject_file = project_root / "pyproject.toml"
         if pyproject_file.exists():
             with open(pyproject_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.strip().startswith("version"):
-                        # Extract version from line like: version = "0.1.0"
-                        version = line.split("=")[1].strip().strip('"').strip("'")
-                        return version
-    except Exception:
-        pass
+                content = f.read()
+                # Use regex to extract version more reliably
+                import re
+                match = re.search(r'version\s*=\s*["\']([^"\']+)["\']', content)
+                if match:
+                    return match.group(1)
+    except Exception as e:
+        print(f"[WARNING] Failed to parse version: {e}")
     return None
 
 

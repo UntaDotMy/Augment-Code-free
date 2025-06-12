@@ -292,15 +292,16 @@ class AugmentFreeAPI:
             project_root = current_dir.parent.parent.parent
             pyproject_file = project_root / "pyproject.toml"
 
-            version = "0.1.0"  # Default version
+            version = "0.1.2"  # Default version
 
             if pyproject_file.exists():
                 with open(pyproject_file, "r", encoding="utf-8") as f:
-                    for line in f:
-                        if line.strip().startswith("version"):
-                            # Extract version from line like: version = "0.1.0"
-                            version = line.split("=")[1].strip().strip('"').strip("'")
-                            break
+                    content = f.read()
+                    # Use regex to extract version more reliably (same as build.py)
+                    import re
+                    match = re.search(r'version\s*=\s*["\']([^"\']+)["\']', content)
+                    if match:
+                        version = match.group(1)
 
             return {
                 "success": True,
