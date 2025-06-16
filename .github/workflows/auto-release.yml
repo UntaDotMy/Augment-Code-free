@@ -110,20 +110,37 @@ jobs:
           fi
         fi
 
+    - name: Update changelog for release
+      if: steps.should_release.outputs.should_create == 'true'
+      run: |
+        NEW_VERSION="${{ steps.version_increment.outputs.new_version }}"
+
+        # Update CHANGELOG.md by moving unreleased to versioned section
+        python scripts/prepare-release.py "$NEW_VERSION"
+
+        # Configure git
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Commit changelog changes
+        git add CHANGELOG.md
+        git commit -m "docs: update changelog for $NEW_VERSION" || echo "No changelog changes to commit"
+
     - name: Create and push tag
       if: steps.should_release.outputs.should_create == 'true'
       run: |
         NEW_VERSION="${{ steps.version_increment.outputs.new_version }}"
         VERSION_TYPE="${{ steps.version_increment.outputs.version_type }}"
 
-        # Configure git
+        # Configure git (in case previous step didn't run)
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
         # Create tag with message
         git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION ($VERSION_TYPE)"
 
-        # Push tag
+        # Push tag and any changelog commits
+        git push origin main
         git push origin "$NEW_VERSION"
 
         echo "Created and pushed tag: $NEW_VERSION"

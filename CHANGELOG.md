@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- 🤖 **Full Automation Workflow** - Complete 4-step automation process
+  - Auto Signout: Intelligent IDE process detection and closure
+  - Auto Cleaning: Comprehensive data cleaning (telemetry, database, workspace)
+  - Auto Signin Preparation: Ready IDE for new Augment login
+  - Auto Restart: Automatic IDE restart after cleaning
+- ⚙️ **Customizable Automation Options** - Selective step execution with user-friendly modal
+- 🔄 **Smart Process Management** - Cross-platform IDE process handling with graceful shutdown
+- 🌐 **Complete Translation System** - Fixed missing English translations in automation modal
+- 📦 **Enhanced Build System** - Updated all build scripts to include automation dependencies
 - 🤖 Automatic versioning system based on commit messages
 - 📋 Release script for manual version management
 - 🚀 Auto-release workflow for GitHub Actions
@@ -18,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎯 Non-overlapping toast notification system
 
 ### Enhanced
+- 🛠️ **Process Management** - Added psutil dependency for reliable IDE process control
+- 🎨 **User Interface** - New automation section with step-by-step progress display
+- 📊 **Results Display** - Detailed automation results with individual step status
+- 🔧 **Build Scripts** - Updated build.bat, build.py, build.sh, and GitHub Actions
+- 🌐 **Internationalization** - Complete translation coverage for all automation features
 - 🛠️ Backend path verification system
 - ⚙️ Frontend event handling optimization
 - 🏗️ Modular code refactoring
@@ -25,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📦 GitHub Actions build system with multi-platform support
 
 ### Fixed
+- 🌐 **Translation Issues** - Fixed missing English translations in automation options modal
+- 📦 **Dependency Management** - Added psutil to requirements and build configurations
+- 🔧 **Build System** - Updated all build scripts to include automation module
+- 🎯 **Virtual Environment** - Fixed psutil installation in uv-managed environments
 - 🔧 Path copying with correct backslashes
 - 🌐 Language switching status issues
 - ⚠️ RuntimeWarning on application startup
@@ -32,6 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🎨 Toast notification overlap problems
 
 ### Technical
+- 🔧 **New Dependencies** - Added psutil>=5.9.0 for process management
+- 🏗️ **API Extensions** - New automation handlers and core API methods
+- 🎨 **CSS Enhancements** - Automation section styling with responsive design
+- 📱 **JavaScript Functions** - Complete automation workflow implementation
 - 🔧 PyInstaller build optimizations
 - 🎯 Pillow dependency for icon conversion
 - 📊 Semantic versioning implementation

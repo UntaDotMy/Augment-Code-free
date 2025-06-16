@@ -191,6 +191,36 @@ jobs:
       with:
         path: artifacts
 
+    - name: Extract changelog content
+      id: changelog
+      run: |
+        # Extract unreleased section from CHANGELOG.md
+        if [ -f "CHANGELOG.md" ]; then
+          # Get content between "## [Unreleased]" and next "##" or "---"
+          changelog_content=$(sed -n '/## \[Unreleased\]/,/^## \|^---/p' CHANGELOG.md | sed '$d' | tail -n +2)
+
+          # If changelog content is empty, use a default message
+          if [ -z "$changelog_content" ]; then
+            changelog_content="### Changes
+        - Various improvements and bug fixes
+        - See commit history for detailed changes"
+          fi
+
+          # Save to output (escape newlines for GitHub Actions)
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$changelog_content" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "✅ Changelog content extracted"
+        else
+          echo "⚠️ CHANGELOG.md not found, using default content"
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "### Changes
+        - Various improvements and bug fixes
+        - See commit history for detailed changes" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
@@ -206,7 +236,9 @@ jobs:
         body: |
           ## 🚀 AugmentCode Free ${{ inputs.version || github.ref_name }}
 
-          **Modified by UntaDotMy** - Enhanced version with smart IDE detection and multi-language support.
+          **Modified by UntaDotMy** - Enhanced version with comprehensive automation and multi-language support.
+
+          ${{ steps.changelog.outputs.content }}
 
           ### 📦 Downloads
           - **Windows**: `AugmentFree_latest_windows.exe`
@@ -214,12 +246,17 @@ jobs:
           - **macOS**: `AugmentFree_latest_macos`
 
           ### ✨ Key Features
-          - 🔍 Smart IDE detection with path verification
-          - 💙 VS Code Insiders support
-          - 🌐 Chinese/English interface switching
-          - 📋 One-click path copying
-          - 🎯 Non-overlapping notifications
+          - 🤖 **Full Automation Workflow** - Complete 4-step automation process
+          - 🔍 **Smart IDE Detection** - Automatic detection with path verification
+          - 💙 **VS Code Insiders Support** - Complete compatibility
+          - 🌐 **Multi-language Interface** - Chinese/English switching
+          - 📋 **One-click Operations** - Copy paths and execute operations
+          - 🎯 **Smart Notifications** - Non-overlapping toast system
+          - ⚙️ **Customizable Options** - Selective automation steps
 
-          Original project by [vagmr](https://github.com/vagmr/Augment-Code-free)
+          ### 🔗 Links
+          - **Original Project**: [vagmr/Augment-Code-free](https://github.com/vagmr/Augment-Code-free)
+          - **Documentation**: [README.md](https://github.com/UntaDotMy/Augment-Code-free/blob/main/README.md)
+          - **Changelog**: [CHANGELOG.md](https://github.com/UntaDotMy/Augment-Code-free/blob/main/CHANGELOG.md)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
