@@ -56,19 +56,31 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v3
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
       with:
-        version: "latest"
-        enable-cache: true
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml', '**/setup.py') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
-        uv sync
+        echo "📦 Installing dependencies..."
 
-    - name: Install PyInstaller and dependencies
-      run: |
-        uv add pyinstaller pillow
+        # Use pip for reliable installation
+        python -m pip install --upgrade pip setuptools wheel
+
+        # Install project dependencies
+        python -m pip install pywebview jinja2
+
+        # Install build dependencies
+        python -m pip install pyinstaller pillow
+
+        # Install project in development mode
+        python -m pip install -e .
+
+        echo "✅ Dependencies installed successfully"
 
     - name: Check for icon file
       id: check_icon
@@ -83,25 +95,35 @@ jobs:
     - name: Build executable (Windows)
       if: runner.os == 'Windows'
       run: |
+        echo "🔨 Building Windows executable..."
+
+        # Build with PyInstaller (simplified)
         if [ "${{ steps.check_icon.outputs.icon_exists }}" = "true" ]; then
-          uv run pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" --add-data="app.ico;." --optimize=2 --strip src/augment_free/main.py
+          python -m PyInstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" src/augment_free/main.py
         else
-          uv run pyinstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" --optimize=2 --strip src/augment_free/main.py
+          python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" src/augment_free/main.py
         fi
       shell: bash
-      timeout-minutes: 30
+      timeout-minutes: 20
 
     - name: Build executable (Linux/macOS)
       if: runner.os != 'Windows'
       run: |
+        echo "🔨 Building ${{ runner.os }} executable..."
+
+        # Build with PyInstaller (with fallback for icon issues)
         if [ "${{ steps.check_icon.outputs.icon_exists }}" = "true" ]; then
-          # Try with icon first, fallback without icon if it fails
-          uv run pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --add-data="app.ico:." --optimize=2 --strip src/augment_free/main.py || \
-          uv run pyinstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --optimize=2 --strip src/augment_free/main.py
+          # Try with icon first
+          if python -m PyInstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" src/augment_free/main.py; then
+            echo "✅ Build successful with icon"
+          else
+            echo "⚠️ Icon build failed, trying without icon..."
+            python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" src/augment_free/main.py
+          fi
         else
-          uv run pyinstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --optimize=2 --strip src/augment_free/main.py
+          python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" src/augment_free/main.py
         fi
-      timeout-minutes: 30
+      timeout-minutes: 20
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
