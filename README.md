@@ -174,6 +174,8 @@ git commit -m "fix: resolve copy button issue"
 git commit -m "docs: update README"
 ```
 
+> **💡 提示**: 系统会在每次推送到 main 分支时自动检查是否需要创建新版本。如果有新的提交，会根据提交信息自动确定版本类型并创建发布。
+
 ## 使用方法
 
 ### 使用可执行文件
