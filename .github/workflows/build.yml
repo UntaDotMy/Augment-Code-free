@@ -2,11 +2,21 @@ name: Build Executable
 
 on:
   push:
-    branches: [ main ]
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+        type: string
+      create_release:
+        description: 'Create a release'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -90,7 +100,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.create_release == true)
     
     steps:
     - name: Checkout code
@@ -104,6 +114,8 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: ${{ inputs.version || github.ref_name }}
+        name: ${{ inputs.version || github.ref_name }}
         files: |
           artifacts/windows-latest-executable/AugmentFree_latest.exe
           artifacts/ubuntu-latest-executable/AugmentFree_latest
@@ -111,5 +123,23 @@ jobs:
         draft: false
         prerelease: false
         generate_release_notes: true
+        body: |
+          ## 🚀 AugmentCode Free ${{ inputs.version || github.ref_name }}
+
+          **Modified by UntaDotMy** - Enhanced version with smart IDE detection and multi-language support.
+
+          ### 📦 Downloads
+          - **Windows**: `AugmentFree_latest.exe`
+          - **Linux**: `AugmentFree_latest` (Linux)
+          - **macOS**: `AugmentFree_latest` (macOS)
+
+          ### ✨ Key Features
+          - 🔍 Smart IDE detection with path verification
+          - 💙 VS Code Insiders support
+          - 🌐 Chinese/English interface switching
+          - 📋 One-click path copying
+          - 🎯 Non-overlapping notifications
+
+          Original project by [vagmr](https://github.com/vagmr/Augment-Code-free)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

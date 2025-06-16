@@ -117,6 +117,63 @@ Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易G
    ```
 4. 构建完成后，可执行文件将在 `dist/` 目录中
 
+### 方式四：自动版本发布系统
+
+项目支持智能自动版本管理和发布：
+
+#### **🤖 自动版本检测（推荐）**：
+系统会根据提交信息自动确定版本类型：
+- **主版本 (+1.0.0)**: 包含 `BREAKING`、`major`、`breaking change` 的提交
+- **次版本 (+0.1.0)**: 包含 `feat`、`feature`、`enhancement`、`add`、`new` 的提交
+- **补丁版本 (+0.0.1)**: 其他提交（bug修复等）
+
+```bash
+# 只需正常提交，系统自动处理版本
+git add .
+git commit -m "feat: add new smart detection feature"
+git push origin main
+# 系统自动创建 v1.1.0 版本
+```
+
+#### **📋 手动版本发布**：
+```bash
+# 使用发布脚本（推荐）
+python scripts/release.py
+
+# Windows 用户
+scripts/release.bat
+
+# 或手动创建标签
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+#### **🎯 GitHub Actions 手动触发**：
+1. 进入 GitHub 仓库 → **Actions**
+2. 选择 **"Auto Release"** 工作流
+3. 点击 **"Run workflow"**
+4. 选择版本类型（major/minor/patch）
+5. 点击 **"Run workflow"**
+
+#### **📊 版本号规则**：
+- **v1.0.0** → **v2.0.0** (主版本): 重大更新、破坏性变更
+- **v1.0.0** → **v1.1.0** (次版本): 新功能、增强功能
+- **v1.0.0** → **v1.0.1** (补丁版本): Bug修复、小改动
+
+#### **🎯 提交信息示例**：
+```bash
+# 主版本更新
+git commit -m "BREAKING: redesign entire UI system"
+
+# 次版本更新
+git commit -m "feat: add VS Code Insiders support"
+git commit -m "enhancement: improve path detection"
+
+# 补丁版本更新
+git commit -m "fix: resolve copy button issue"
+git commit -m "docs: update README"
+```
+
 ## 使用方法
 
 ### 使用可执行文件

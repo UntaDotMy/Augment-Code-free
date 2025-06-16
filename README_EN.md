@@ -115,6 +115,63 @@ If you want to build the executable yourself:
    ```
 4. After building, the executable will be in the `dist/` directory
 
+### Method 4: Automatic Versioning & Release System
+
+The project supports intelligent automatic version management and releasing:
+
+#### **🤖 Automatic Version Detection (Recommended)**:
+The system automatically determines version type based on commit messages:
+- **Major version (+1.0.0)**: Commits containing `BREAKING`, `major`, `breaking change`
+- **Minor version (+0.1.0)**: Commits containing `feat`, `feature`, `enhancement`, `add`, `new`
+- **Patch version (+0.0.1)**: Other commits (bug fixes, etc.)
+
+```bash
+# Just commit normally, system handles versioning automatically
+git add .
+git commit -m "feat: add new smart detection feature"
+git push origin main
+# System automatically creates v1.1.0 release
+```
+
+#### **📋 Manual Version Release**:
+```bash
+# Use release script (recommended)
+python scripts/release.py
+
+# Windows users
+scripts/release.bat
+
+# Or manually create tag
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+#### **🎯 GitHub Actions Manual Trigger**:
+1. Go to GitHub repository → **Actions**
+2. Select **"Auto Release"** workflow
+3. Click **"Run workflow"**
+4. Choose version type (major/minor/patch)
+5. Click **"Run workflow"**
+
+#### **📊 Version Number Rules**:
+- **v1.0.0** → **v2.0.0** (Major): Breaking changes, major updates
+- **v1.0.0** → **v1.1.0** (Minor): New features, enhancements
+- **v1.0.0** → **v1.0.1** (Patch): Bug fixes, small changes
+
+#### **🎯 Commit Message Examples**:
+```bash
+# Major version update
+git commit -m "BREAKING: redesign entire UI system"
+
+# Minor version update
+git commit -m "feat: add VS Code Insiders support"
+git commit -m "enhancement: improve path detection"
+
+# Patch version update
+git commit -m "fix: resolve copy button issue"
+git commit -m "docs: update README"
+```
+
 ## Usage
 
 ### Using Executable

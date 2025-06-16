@@ -1,0 +1,143 @@
+name: Auto Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version increment type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+
+jobs:
+  auto-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for proper versioning
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install semver
+      run: npm install -g semver
+
+    - name: Get latest tag
+      id: get_latest_tag
+      run: |
+        # Get the latest tag, or use v0.0.0 if no tags exist
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+        echo "Latest tag: $LATEST_TAG"
+
+    - name: Determine version increment
+      id: version_increment
+      run: |
+        # Get commit messages since last tag
+        LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
+        
+        if [ "$LATEST_TAG" = "v0.0.0" ]; then
+          # First release
+          VERSION_TYPE="major"
+          NEW_VERSION="v1.0.0"
+        elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          # Manual trigger - use input
+          VERSION_TYPE="${{ inputs.version_type }}"
+          NEW_VERSION="v$(semver -i $VERSION_TYPE ${LATEST_TAG#v})"
+        else
+          # Auto-detect from commit messages
+          COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"%s" 2>/dev/null || git log --pretty=format:"%s")
+          
+          # Check for breaking changes or major updates
+          if echo "$COMMITS" | grep -iE "(BREAKING|major|breaking change|major update)" > /dev/null; then
+            VERSION_TYPE="major"
+          # Check for features or enhancements
+          elif echo "$COMMITS" | grep -iE "(feat|feature|enhancement|add|new)" > /dev/null; then
+            VERSION_TYPE="minor"
+          # Default to patch for bug fixes and other changes
+          else
+            VERSION_TYPE="patch"
+          fi
+          
+          NEW_VERSION="v$(semver -i $VERSION_TYPE ${LATEST_TAG#v})"
+        fi
+        
+        echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
+        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "Version increment: $VERSION_TYPE"
+        echo "New version: $NEW_VERSION"
+
+    - name: Check if version should be created
+      id: should_release
+      run: |
+        LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
+        NEW_VERSION="${{ steps.version_increment.outputs.new_version }}"
+        
+        # Always create release if it's the first version or manual trigger
+        if [ "$LATEST_TAG" = "v0.0.0" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "should_create=true" >> $GITHUB_OUTPUT
+          echo "Creating release: First release or manual trigger"
+        else
+          # Check if there are actual changes since last tag
+          CHANGES=$(git log ${LATEST_TAG}..HEAD --oneline 2>/dev/null | wc -l)
+          if [ "$CHANGES" -gt 0 ]; then
+            echo "should_create=true" >> $GITHUB_OUTPUT
+            echo "Creating release: $CHANGES changes since last tag"
+          else
+            echo "should_create=false" >> $GITHUB_OUTPUT
+            echo "No changes since last tag, skipping release"
+          fi
+        fi
+
+    - name: Create and push tag
+      if: steps.should_release.outputs.should_create == 'true'
+      run: |
+        NEW_VERSION="${{ steps.version_increment.outputs.new_version }}"
+        VERSION_TYPE="${{ steps.version_increment.outputs.version_type }}"
+        
+        # Configure git
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # Create tag with message
+        git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION ($VERSION_TYPE)"
+        
+        # Push tag
+        git push origin "$NEW_VERSION"
+        
+        echo "Created and pushed tag: $NEW_VERSION"
+
+    - name: Trigger build workflow
+      if: steps.should_release.outputs.should_create == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const newVersion = '${{ steps.version_increment.outputs.new_version }}';
+          const versionType = '${{ steps.version_increment.outputs.version_type }}';
+          
+          // Wait a moment for the tag to be available
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          
+          console.log(`Triggering build workflow for ${newVersion} (${versionType})`);
+          
+          // The build workflow will automatically trigger on the new tag
+          // No need to manually trigger it since it listens for tag pushes
+
+    - name: Output release info
+      if: steps.should_release.outputs.should_create == 'true'
+      run: |
+        echo "🎉 Release created!"
+        echo "Version: ${{ steps.version_increment.outputs.new_version }}"
+        echo "Type: ${{ steps.version_increment.outputs.version_type }}"
+        echo "The build workflow will automatically create the release with executables."
