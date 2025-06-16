@@ -16,13 +16,10 @@ jobs:
         include:
           - os: windows-latest
             executable_name: AugmentFree_latest.exe
-            build_command: pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" --add-data="app.ico;." src/augment_free/main.py
           - os: ubuntu-latest
             executable_name: AugmentFree_latest
-            build_command: pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --add-data="app.ico:." src/augment_free/main.py
           - os: macos-latest
             executable_name: AugmentFree_latest
-            build_command: pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --add-data="app.ico:." src/augment_free/main.py
 
     runs-on: ${{ matrix.os }}
 
@@ -48,9 +45,34 @@ jobs:
       run: |
         uv add pyinstaller
 
-    - name: Build executable
+    - name: Check for icon file
+      id: check_icon
       run: |
-        ${{ matrix.build_command }}
+        if [ -f "app.ico" ]; then
+          echo "icon_exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "icon_exists=false" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+
+    - name: Build executable (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        if [ "${{ steps.check_icon.outputs.icon_exists }}" = "true" ]; then
+          uv run pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" --add-data="app.ico;." src/augment_free/main.py
+        else
+          uv run pyinstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" src/augment_free/main.py
+        fi
+      shell: bash
+
+    - name: Build executable (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        if [ "${{ steps.check_icon.outputs.icon_exists }}" = "true" ]; then
+          uv run pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --add-data="app.ico:." src/augment_free/main.py
+        else
+          uv run pyinstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" src/augment_free/main.py
+        fi
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
