@@ -4,13 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "augment-free"
-version = "0.1.2"
-description = "Free AugmentCode - A tool for cleaning AugmentCode related data with modern GUI"
+version = "0.2.0"
+description = "Free AugmentCode - A tool for cleaning AugmentCode related data with modern GUI (Modified by UntaDotMy)"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
-    { name = "vagmr"}
+    { name = "vagmr"},
+    { name = "UntaDotMy", email = "42847931+UntaDotMy@users.noreply.github.com"}
 ]
 keywords = ["augmentcode", "vscode", "telemetry", "cleaner", "gui"]
 classifiers = [
@@ -35,14 +36,18 @@ dev = [
     "isort>=5.12.0",
     "flake8>=6.0.0",
 ]
+build = [
+    "pyinstaller>=6.0.0",
+]
 
 [project.scripts]
 augment-free = "augment_free.main:main"
 
 [project.urls]
-Homepage = "https://github.com/vagmr/Augment-free"
-Repository = "https://github.com/vagmr/Augment-free"
-Issues = "https://github.com/vagmr/Augment-free/issues"
+Homepage = "https://github.com/UntaDotMy/Augment-Code-free"
+Repository = "https://github.com/UntaDotMy/Augment-Code-free"
+Issues = "https://github.com/UntaDotMy/Augment-Code-free/issues"
+Original = "https://github.com/vagmr/Augment-Code-free"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/augment_free"]

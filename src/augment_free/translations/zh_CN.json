@@ -1,0 +1,188 @@
+{
+  "app": {
+    "title": "Augment-Code-Free",
+    "subtitle": "重置 Augment插件数据的简易工具"
+  },
+  "ui": {
+    "header": {
+      "status_label": "状态:",
+      "status_checking": "检查中...",
+      "status_ready": "就绪",
+      "status_error": "错误",
+      "editor_label": "🎯 编辑器:",
+      "ide_status_label": "🎯 IDE:",
+      "detect_tooltip": "自动检测IDE",
+      "about_tooltip": "关于"
+    },
+    "system": {
+      "title": "📁 系统信息",
+      "refresh_tooltip": "刷新信息",
+      "loading": "正在加载系统信息...",
+      "home_dir": "用户目录",
+      "app_data_dir": "应用数据目录",
+      "editor_type": "编辑器类型",
+      "ide_type": "IDE类型",
+      "storage_path": "存储路径",
+      "db_path": "数据库路径",
+      "machine_id_path": "机器ID路径",
+      "workspace_storage_path": "工作区存储路径",
+      "jetbrains_config_path": "JetBrains配置路径",
+      "permanent_device_id_path": "永久设备ID路径",
+      "permanent_user_id_path": "永久用户ID路径",
+      "not_found": "未找到",
+      "ide_section": "IDE",
+      "copy_tooltip": "复制到剪贴板",
+      "copy_success": "已复制到剪贴板！",
+      "copy_failed": "复制到剪贴板失败",
+      "no_ides_detected": "未检测到IDE",
+      "click_detect_button": "点击检测按钮查找IDE",
+      "refresh_success": "系统信息刷新成功",
+      "refresh_failed": "系统信息刷新失败"
+    },
+    "operations": {
+      "title": "🛠️ 清理操作",
+      "telemetry": {
+        "title": "重置机器码",
+        "title_jetbrains": "重置设备ID",
+        "description": "重置设备 ID 和机器 ID，生成新的随机标识符",
+        "description_jetbrains": "重置JetBrains IDE的设备标识符",
+        "button": "重置机器码",
+        "button_jetbrains": "重置设备ID"
+      },
+      "database": {
+        "title": "清理数据库",
+        "description": "清理 SQLite 数据库中包含 'augment' 的记录",
+        "button": "清理数据库"
+      },
+      "workspace": {
+        "title": "清理工作区",
+        "description": "清理工作区存储文件和目录",
+        "button": "清理工作区"
+      },
+      "all": {
+        "title": "一键清理",
+        "description": "执行所有清理操作（推荐）",
+        "button": "立即执行"
+      },
+      "preview": {
+        "title": "操作预览",
+        "current_values": "当前值",
+        "new_values": "新值（将被生成）",
+        "database_info": "数据库信息",
+        "workspace_info": "工作区信息",
+        "records_found": "找到记录",
+        "files_found": "找到文件",
+        "database_path": "数据库路径",
+        "workspace_path": "工作区路径",
+        "not_found": "未找到",
+        "close": "关闭"
+      }
+    },
+    "results": {
+      "title": "📊 操作结果",
+      "close": "✕",
+      "status": "状态",
+      "error": "错误"
+    },
+    "footer": {
+      "warning": {
+        "title": "重要提醒",
+        "text": "使用前请确保已退出 {editor} 和 AugmentCode 插件"
+      },
+      "tip": {
+        "title": "使用建议",
+        "text": "操作完成后重启 {editor} 并使用新邮箱登录 AugmentCode"
+      }
+    },
+    "about": {
+      "title": "🐱 关于 Free AugmentCode",
+      "close": "✕",
+      "project_info": "📋 项目信息",
+      "version": "版本:",
+      "author": "作者:",
+      "description": "描述:",
+      "description_text": "用于清理 AugmentCode 相关数据的现代化 GUI 工具",
+      "links": "🔗 相关链接",
+      "github_repo": "📂 GitHub 仓库",
+      "download_latest": "📦 下载最新版本",
+      "disclaimer": "⚠️ 免责声明",
+      "disclaimer_risk": "使用风险自负：本工具仅供学习和研究目的使用，使用者需自行承担使用风险。",
+      "disclaimer_data": "数据安全：使用前请确保重要数据已备份，作者不对任何数据丢失负责。",
+      "disclaimer_compliance": "合规使用：请遵守相关软件的使用条款和当地法律法规。",
+      "disclaimer_warranty": "无担保：本软件按\"现状\"提供，不提供任何明示或暗示的担保。",
+      "disclaimer_commercial": "商业使用：本项目采用MIT开源协议，所有商业售卖行为均与本人无关"
+    },
+    "loading": {
+      "processing": "正在处理...",
+      "detecting": "正在检测IDE...",
+      "cleaning": "正在清理...",
+      "resetting": "正在重置..."
+    },
+    "language": {
+      "switch_tooltip": "切换语言",
+      "chinese": "中文",
+      "english": "English"
+    }
+  },
+  "messages": {
+    "success": {
+      "telemetry_modified": "遥测ID修改成功",
+      "database_cleaned": "数据库清理成功。删除了 {count} 行记录。",
+      "workspace_cleaned": "工作区清理成功。删除了 {count} 个文件。",
+      "all_operations_completed": "所有操作已完成",
+      "jetbrains_ids_modified": "JetBrains ID处理完成",
+      "language_changed": "语言已切换为中文"
+    },
+    "error": {
+      "telemetry_failed": "遥测ID修改失败",
+      "database_failed": "数据库清理失败",
+      "workspace_failed": "工作区清理失败",
+      "some_operations_failed": "部分操作失败",
+      "jetbrains_config_not_found": "JetBrains配置目录未找到",
+      "jetbrains_config_not_found_detail": "无法找到JetBrains配置目录",
+      "system_info_failed": "获取系统信息失败",
+      "version_info_failed": "获取版本信息失败",
+      "ide_detection_failed": "IDE检测失败",
+      "language_change_failed": "语言切换失败",
+      "language_get_failed": "获取语言信息失败",
+      "translations_get_failed": "获取翻译数据失败",
+      "api_not_connected": "API未连接，请等待应用完全加载后再试！",
+      "editor_change_failed": "切换编辑器失败"
+    },
+    "info": {
+      "system_info_retrieved": "系统信息获取成功",
+      "version_info_retrieved": "版本信息获取成功",
+      "api_ready": "API已就绪",
+      "first_run_check": "首次运行检查完成",
+      "first_run_marked": "首次运行标记完成",
+      "browser_opened": "已在浏览器中打开 {url}",
+      "default_ide_list": "默认IDE列表",
+      "jetbrains_not_applicable": "不适用于JetBrains IDE",
+      "ides_detected": "检测到 {count} 个IDE",
+      "language_retrieved": "语言信息获取成功",
+      "translations_retrieved": "翻译数据获取成功"
+    }
+  },
+  "ide": {
+    "types": {
+      "vscode": "VSCode系列",
+      "jetbrains": "JetBrains系列"
+    },
+    "names": {
+      "VSCodium": "VSCodium",
+      "Code": "VS Code",
+      "Cursor": "Cursor",
+      "Code - OSS": "Code - OSS",
+      "IntelliJ IDEA": "IntelliJ IDEA",
+      "PyCharm": "PyCharm",
+      "WebStorm": "WebStorm",
+      "PhpStorm": "PhpStorm",
+      "RubyMine": "RubyMine",
+      "CLion": "CLion",
+      "DataGrip": "DataGrip",
+      "GoLand": "GoLand",
+      "Rider": "Rider",
+      "Android Studio": "Android Studio"
+    }
+  }
+}

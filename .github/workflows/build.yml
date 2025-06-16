@@ -1,0 +1,88 @@
+name: Build Executable
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+            executable_name: AugmentFree_latest.exe
+            build_command: pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" --add-data="app.ico;." src/augment_free/main.py
+          - os: ubuntu-latest
+            executable_name: AugmentFree_latest
+            build_command: pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --add-data="app.ico:." src/augment_free/main.py
+          - os: macos-latest
+            executable_name: AugmentFree_latest
+            build_command: pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --add-data="app.ico:." src/augment_free/main.py
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: |
+        uv sync
+
+    - name: Install PyInstaller
+      run: |
+        uv add pyinstaller
+
+    - name: Build executable
+      run: |
+        ${{ matrix.build_command }}
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.os }}-executable
+        path: |
+          dist/${{ matrix.executable_name }}
+        retention-days: 30
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          artifacts/windows-latest-executable/AugmentFree_latest.exe
+          artifacts/ubuntu-latest-executable/AugmentFree_latest
+          artifacts/macos-latest-executable/AugmentFree_latest
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

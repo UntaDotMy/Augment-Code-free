@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.5, maximum-scale=3.0">
     <title>Augment-Code-Free</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/x-icon" href="./app.ico">
@@ -13,26 +13,28 @@
         <header class="app-header">
             <div class="header-content">
                 <div class="header-left">
-                    <h1>⚙ Augment-Code-Free</h1>
-                    <p class="subtitle">重置 Augment插件数据的简易工具</p>
+                    <h1 data-i18n="app.title">⚙ Augment-Code-Free</h1>
+                    <p class="subtitle" data-i18n="app.subtitle">重置 Augment插件数据的简易工具</p>
                 </div>
                 <div class="header-right">
                     <div class="status-indicator">
-                        <span class="status-label">状态:</span>
-                        <span class="status-value" id="apiStatus">检查中...</span>
+                        <span class="status-label" data-i18n="ui.header.status_label">状态:</span>
+                        <span class="status-value" id="apiStatus" data-i18n="ui.header.status_checking">检查中...</span>
                     </div>
-                    <div class="editor-selector">
-                        <span class="editor-label">🎯 编辑器:</span>
-                        <select class="editor-select" id="editorSelect" onchange="changeEditor()">
-                            <option value="VSCodium">🔷 VSCodium</option>
-                            <option value="Code">💙 VS Code</option>
-                        </select>
-                        <button class="detect-btn" id="detectBtn" onclick="detectIDEs()" title="自动检测IDE">
+                    <div class="ide-status-section">
+                        <span class="ide-label" data-i18n="ui.header.ide_status_label">🎯 IDEs:</span>
+                        <span class="ide-count" id="ideCount">0</span>
+                        <button class="detect-btn" id="detectBtn" onclick="detectIDEs()" data-i18n-title="ui.header.detect_tooltip">
                             🔍
                         </button>
                         <span class="detect-status" id="detectStatus"></span>
                     </div>
-                    <button class="about-btn" onclick="showAboutModal()" title="关于">
+                    <div class="language-selector">
+                        <button class="language-btn" onclick="toggleLanguage()" data-i18n-title="ui.language.switch_tooltip">
+                            🌐
+                        </button>
+                    </div>
+                    <button class="about-btn" onclick="showAboutModal()" data-i18n-title="ui.header.about_tooltip">
                         ℹ️
                     </button>
                 </div>
@@ -48,20 +50,20 @@
                         <!-- Left Section - System Info -->
                         <div class="system-section">
                             <div class="section-header">
-                                <h2>📁 系统信息</h2>
-                                <button class="refresh-btn" onclick="loadSystemInfo()" title="刷新信息">
+                                <h2 data-i18n="ui.system.title">📁 系统信息</h2>
+                                <button class="refresh-btn" onclick="refreshSystemInfo()" data-i18n-title="ui.system.refresh_tooltip">
                                     🔄
                                 </button>
                             </div>
                             <div class="system-info-compact" id="systemInfo">
-                                <div class="loading">正在加载系统信息...</div>
+                                <div class="loading" data-i18n="ui.system.loading">正在加载系统信息...</div>
                             </div>
                         </div>
 
                         <!-- Right Section - Operations -->
                         <div class="operations-section">
                             <div class="section-header">
-                                <h2>🛠️ 清理操作</h2>
+                                <h2 data-i18n="ui.operations.title">🛠️ 清理操作</h2>
                             </div>
                             <div class="operations-compact">
                                 <!-- Individual Operations -->
@@ -69,10 +71,10 @@
                                     <div class="operation-item-compact">
                                         <div class="operation-icon">🔑</div>
                                         <div class="operation-content">
-                                            <h3>重置机器码</h3>
-                                            <p>重置设备 ID 和机器 ID，生成新的随机标识符</p>
+                                            <h3 data-i18n="ui.operations.telemetry.title">重置机器码</h3>
+                                            <p data-i18n="ui.operations.telemetry.description">重置设备 ID 和机器 ID，生成新的随机标识符</p>
                                         </div>
-                                        <button class="operation-btn btn-primary" onclick="modifyTelemetry()" id="telemetryBtn">
+                                        <button class="operation-btn btn-primary" onclick="modifyTelemetry()" id="telemetryBtn" data-i18n="ui.operations.telemetry.button">
                                             重置机器码
                                         </button>
                                     </div>
@@ -80,10 +82,10 @@
                                     <div class="operation-item-compact">
                                         <div class="operation-icon">🗃️</div>
                                         <div class="operation-content">
-                                            <h3>清理数据库</h3>
-                                            <p>清理 SQLite 数据库中包含 'augment' 的记录</p>
+                                            <h3 data-i18n="ui.operations.database.title">清理数据库</h3>
+                                            <p data-i18n="ui.operations.database.description">清理 SQLite 数据库中包含 'augment' 的记录</p>
                                         </div>
-                                        <button class="operation-btn btn-primary" onclick="cleanDatabase()" id="databaseBtn">
+                                        <button class="operation-btn btn-primary" onclick="cleanDatabase()" id="databaseBtn" data-i18n="ui.operations.database.button">
                                             清理数据库
                                         </button>
                                     </div>
@@ -91,10 +93,10 @@
                                     <div class="operation-item-compact">
                                         <div class="operation-icon">💾</div>
                                         <div class="operation-content">
-                                            <h3>清理工作区</h3>
-                                            <p>清理工作区存储文件和目录</p>
+                                            <h3 data-i18n="ui.operations.workspace.title">清理工作区</h3>
+                                            <p data-i18n="ui.operations.workspace.description">清理工作区存储文件和目录</p>
                                         </div>
-                                        <button class="operation-btn btn-primary" onclick="cleanWorkspace()" id="workspaceBtn">
+                                        <button class="operation-btn btn-primary" onclick="cleanWorkspace()" id="workspaceBtn" data-i18n="ui.operations.workspace.button">
                                             清理工作区
                                         </button>
                                     </div>
@@ -105,11 +107,11 @@
                                     <div class="quick-action-content">
                                         <div class="quick-action-icon">🚀</div>
                                         <div class="quick-action-text">
-                                            <h3>一键清理</h3>
-                                            <p>执行所有清理操作（推荐）</p>
+                                            <h3 data-i18n="ui.operations.all.title">一键清理</h3>
+                                            <p data-i18n="ui.operations.all.description">执行所有清理操作（推荐）</p>
                                         </div>
                                     </div>
-                                    <button class="quick-action-btn" onclick="runAllOperations()" id="allBtn">
+                                    <button class="quick-action-btn" onclick="runAllOperations()" id="allBtn" data-i18n="ui.operations.all.button">
                                         立即执行
                                     </button>
                                 </div>
@@ -124,8 +126,8 @@
         <div class="results-panel" id="resultsPanel" style="display: none;">
             <div class="panel-card">
                 <div class="panel-header">
-                    <h2>📊 操作结果</h2>
-                    <button class="close-btn" onclick="document.getElementById('resultsPanel').style.display='none'">
+                    <h2 data-i18n="ui.results.title">📊 操作结果</h2>
+                    <button class="close-btn" onclick="document.getElementById('resultsPanel').style.display='none'" data-i18n="ui.results.close">
                         ✕
                     </button>
                 </div>
@@ -138,16 +140,22 @@
         <!-- Footer -->
         <footer class="app-footer">
             <div class="footer-content">
-                <div class="footer-warning">
-                    <div class="footer-icon">⚠️</div>
-                    <div class="footer-text">
-                        <p>使用前请确保已退出 <span id="footerEditorName1">VS Code</span> 和 AugmentCode 插件</p>
+                <div class="footer-card footer-warning">
+                    <div class="footer-card-header">
+                        <div class="footer-icon warning-icon">⚠️</div>
+                        <div class="footer-card-title" data-i18n="ui.footer.warning.title">重要提醒</div>
+                    </div>
+                    <div class="footer-card-body">
+                        <p id="footerWarningText">使用前请确保已退出 <span id="footerEditorName1">VS Code</span> 和 AugmentCode 插件</p>
                     </div>
                 </div>
-                <div class="footer-tip">
-                    <div class="footer-icon">💡</div>
-                    <div class="footer-text">
-                        <p>操作完成后重启 <span id="footerEditorName2">VS Code</span> 并使用新邮箱登录 AugmentCode</p>
+                <div class="footer-card footer-tip">
+                    <div class="footer-card-header">
+                        <div class="footer-icon tip-icon">💡</div>
+                        <div class="footer-card-title" data-i18n="ui.footer.tip.title">使用建议</div>
+                    </div>
+                    <div class="footer-card-body">
+                        <p id="footerTipText">操作完成后重启 <span id="footerEditorName2">VS Code</span> 并使用新邮箱登录 AugmentCode</p>
                     </div>
                 </div>
             </div>
@@ -158,37 +166,37 @@
     <div class="modal-overlay" id="aboutModal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>🐱 关于 Free AugmentCode</h2>
-                <button class="modal-close" onclick="hideAboutModal()">✕</button>
+                <h2 data-i18n="ui.about.title">🐱 关于 Free AugmentCode</h2>
+                <button class="modal-close" onclick="hideAboutModal()" data-i18n="ui.about.close">✕</button>
             </div>
             <div class="modal-body">
                 <div class="about-info">
                     <div class="about-section">
-                        <h3>📋 项目信息</h3>
-                        <p><strong>版本:</strong> <span id="appVersion">v0.1.0</span></p>
-                        <p><strong>作者:</strong> vagmr</p>
-                        <p><strong>描述:</strong> 用于清理 AugmentCode 相关数据的现代化 GUI 工具</p>
+                        <h3 data-i18n="ui.about.project_info">📋 项目信息</h3>
+                        <p><strong data-i18n="ui.about.version">版本:</strong> <span id="appVersion">v0.1.0</span></p>
+                        <p><strong data-i18n="ui.about.author">作者:</strong> vagmr</p>
+                        <p><strong data-i18n="ui.about.description">描述:</strong> <span data-i18n="ui.about.description_text">用于清理 AugmentCode 相关数据的现代化 GUI 工具</span></p>
                     </div>
 
                     <div class="about-section">
-                        <h3>🔗 相关链接</h3>
+                        <h3 data-i18n="ui.about.links">🔗 相关链接</h3>
                         <div class="link-buttons">
-                            <button class="link-btn" onclick="openGitHubRepo()">
+                            <button class="link-btn" onclick="openGitHubRepo()" data-i18n="ui.about.github_repo">
                                 📂 GitHub 仓库
                             </button>
-                            <button class="link-btn" onclick="openGitHubReleases()">
+                            <button class="link-btn" onclick="openGitHubReleases()" data-i18n="ui.about.download_latest">
                                 📦 下载最新版本
                             </button>
                         </div>
                     </div>
 
                     <div class="about-section">
-                        <h3>⚠️ 免责声明</h3>
-                        <p><strong>使用风险自负：</strong>本工具仅供学习和研究目的使用，使用者需自行承担使用风险。</p>
-                        <p><strong>数据安全：</strong>使用前请确保重要数据已备份，作者不对任何数据丢失负责。</p>
-                        <p><strong>合规使用：</strong>请遵守相关软件的使用条款和当地法律法规。</p>
-                        <p><strong>无担保：</strong>本软件按"现状"提供，不提供任何明示或暗示的担保。</p>
-                        <p><strong>商业使用：</strong>本项目采用MIT开源协议，所有商业售卖行为均与本人无关</p>
+                        <h3 data-i18n="ui.about.disclaimer">⚠️ 免责声明</h3>
+                        <p data-i18n="ui.about.disclaimer_risk">使用风险自负：本工具仅供学习和研究目的使用，使用者需自行承担使用风险。</p>
+                        <p data-i18n="ui.about.disclaimer_data">数据安全：使用前请确保重要数据已备份，作者不对任何数据丢失负责。</p>
+                        <p data-i18n="ui.about.disclaimer_compliance">合规使用：请遵守相关软件的使用条款和当地法律法规。</p>
+                        <p data-i18n="ui.about.disclaimer_warranty">无担保：本软件按"现状"提供，不提供任何明示或暗示的担保。</p>
+                        <p data-i18n="ui.about.disclaimer_commercial">商业使用：本项目采用MIT开源协议，所有商业售卖行为均与本人无关</p>
                     </div>
                 </div>
             </div>
@@ -199,7 +207,7 @@
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="loading-spinner">
             <div class="spinner"></div>
-            <p id="loadingText">正在处理...</p>
+            <p id="loadingText" data-i18n="ui.loading.processing">正在处理...</p>
         </div>
     </div>
 

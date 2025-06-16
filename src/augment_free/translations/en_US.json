@@ -1,0 +1,188 @@
+{
+  "app": {
+    "title": "Augment-Code-Free",
+    "subtitle": "A simple tool to reset AugmentCode plugin data"
+  },
+  "ui": {
+    "header": {
+      "status_label": "Status:",
+      "status_checking": "Checking...",
+      "status_ready": "Ready",
+      "status_error": "Error",
+      "editor_label": "🎯 Editor:",
+      "ide_status_label": "🎯 IDEs:",
+      "detect_tooltip": "Auto-detect IDEs",
+      "about_tooltip": "About"
+    },
+    "system": {
+      "title": "📁 System Information",
+      "refresh_tooltip": "Refresh information",
+      "loading": "Loading system information...",
+      "home_dir": "Home Directory",
+      "app_data_dir": "App Data Directory",
+      "editor_type": "Editor Type",
+      "ide_type": "IDE Type",
+      "storage_path": "Storage Path",
+      "db_path": "Database Path",
+      "machine_id_path": "Machine ID Path",
+      "workspace_storage_path": "Workspace Storage Path",
+      "jetbrains_config_path": "JetBrains Config Path",
+      "permanent_device_id_path": "Permanent Device ID Path",
+      "permanent_user_id_path": "Permanent User ID Path",
+      "not_found": "Not Found",
+      "ide_section": "IDE",
+      "copy_tooltip": "Copy to clipboard",
+      "copy_success": "Copied to clipboard!",
+      "copy_failed": "Failed to copy to clipboard",
+      "no_ides_detected": "No IDEs Detected",
+      "click_detect_button": "Click the detect button to find IDEs",
+      "refresh_success": "System information refreshed successfully",
+      "refresh_failed": "Failed to refresh system information"
+    },
+    "operations": {
+      "title": "🛠️ Cleanup Operations",
+      "telemetry": {
+        "title": "Reset Machine Code",
+        "title_jetbrains": "Reset Device ID",
+        "description": "Reset device ID and machine ID, generate new random identifiers",
+        "description_jetbrains": "Reset JetBrains IDE device identifiers",
+        "button": "Reset Machine Code",
+        "button_jetbrains": "Reset Device ID"
+      },
+      "database": {
+        "title": "Clean Database",
+        "description": "Clean SQLite database records containing 'augment'",
+        "button": "Clean Database"
+      },
+      "workspace": {
+        "title": "Clean Workspace",
+        "description": "Clean workspace storage files and directories",
+        "button": "Clean Workspace"
+      },
+      "all": {
+        "title": "One-Click Cleanup",
+        "description": "Execute all cleanup operations (recommended)",
+        "button": "Execute Now"
+      },
+      "preview": {
+        "title": "Operation Preview",
+        "current_values": "Current Values",
+        "new_values": "New Values (Will be generated)",
+        "database_info": "Database Information",
+        "workspace_info": "Workspace Information",
+        "records_found": "Records Found",
+        "files_found": "Files Found",
+        "database_path": "Database Path",
+        "workspace_path": "Workspace Path",
+        "not_found": "Not Found",
+        "close": "Close"
+      }
+    },
+    "results": {
+      "title": "📊 Operation Results",
+      "close": "✕",
+      "status": "Status",
+      "error": "Error"
+    },
+    "footer": {
+      "warning": {
+        "title": "Important Notice",
+        "text": "Please ensure you have exited {editor} and AugmentCode plugin before use"
+      },
+      "tip": {
+        "title": "Usage Tips",
+        "text": "After operations complete, restart {editor} and login to AugmentCode with a new email"
+      }
+    },
+    "about": {
+      "title": "🐱 About Free AugmentCode",
+      "close": "✕",
+      "project_info": "📋 Project Information",
+      "version": "Version:",
+      "author": "Author:",
+      "description": "Description:",
+      "description_text": "A modern GUI tool for cleaning AugmentCode related data",
+      "links": "🔗 Related Links",
+      "github_repo": "📂 GitHub Repository",
+      "download_latest": "📦 Download Latest Version",
+      "disclaimer": "⚠️ Disclaimer",
+      "disclaimer_risk": "Use at your own risk: This tool is for educational and research purposes only. Users assume all risks.",
+      "disclaimer_data": "Data Safety: Please ensure important data is backed up before use. The author is not responsible for any data loss.",
+      "disclaimer_compliance": "Compliance: Please comply with relevant software terms of use and local laws and regulations.",
+      "disclaimer_warranty": "No Warranty: This software is provided \"as is\" without any express or implied warranties.",
+      "disclaimer_commercial": "Commercial Use: This project uses MIT open source license. All commercial sales are unrelated to the author."
+    },
+    "loading": {
+      "processing": "Processing...",
+      "detecting": "Detecting IDEs...",
+      "cleaning": "Cleaning...",
+      "resetting": "Resetting..."
+    },
+    "language": {
+      "switch_tooltip": "Switch Language",
+      "chinese": "中文",
+      "english": "English"
+    }
+  },
+  "messages": {
+    "success": {
+      "telemetry_modified": "Telemetry IDs modified successfully",
+      "database_cleaned": "Database cleaned successfully. Deleted {count} rows.",
+      "workspace_cleaned": "Workspace cleaned successfully. Deleted {count} files.",
+      "all_operations_completed": "All operations completed",
+      "jetbrains_ids_modified": "JetBrains ID processing completed",
+      "language_changed": "Language switched to English"
+    },
+    "error": {
+      "telemetry_failed": "Failed to modify telemetry IDs",
+      "database_failed": "Failed to clean database",
+      "workspace_failed": "Failed to clean workspace",
+      "some_operations_failed": "Some operations failed",
+      "jetbrains_config_not_found": "JetBrains configuration directory not found",
+      "jetbrains_config_not_found_detail": "Unable to find JetBrains configuration directory",
+      "system_info_failed": "Failed to retrieve system information",
+      "version_info_failed": "Failed to retrieve version information",
+      "ide_detection_failed": "IDE detection failed",
+      "language_change_failed": "Failed to switch language",
+      "language_get_failed": "Failed to retrieve language information",
+      "translations_get_failed": "Failed to retrieve translation data",
+      "api_not_connected": "API not connected, please wait for the application to fully load!",
+      "editor_change_failed": "Failed to switch editor"
+    },
+    "info": {
+      "system_info_retrieved": "System information retrieved successfully",
+      "version_info_retrieved": "Version information retrieved successfully",
+      "api_ready": "API is ready",
+      "first_run_check": "First run check completed",
+      "first_run_marked": "First run marked as complete",
+      "browser_opened": "Opened {url} in browser",
+      "default_ide_list": "Default IDE list",
+      "jetbrains_not_applicable": "Not applicable to JetBrains IDE",
+      "ides_detected": "Detected {count} IDEs",
+      "language_retrieved": "Language information retrieved successfully",
+      "translations_retrieved": "Translation data retrieved successfully"
+    }
+  },
+  "ide": {
+    "types": {
+      "vscode": "VSCode Series",
+      "jetbrains": "JetBrains Series"
+    },
+    "names": {
+      "VSCodium": "VSCodium",
+      "Code": "VS Code",
+      "Cursor": "Cursor",
+      "Code - OSS": "Code - OSS",
+      "IntelliJ IDEA": "IntelliJ IDEA",
+      "PyCharm": "PyCharm",
+      "WebStorm": "WebStorm",
+      "PhpStorm": "PhpStorm",
+      "RubyMine": "RubyMine",
+      "CLion": "CLion",
+      "DataGrip": "DataGrip",
+      "GoLand": "GoLand",
+      "Rider": "Rider",
+      "Android Studio": "Android Studio"
+    }
+  }
+}

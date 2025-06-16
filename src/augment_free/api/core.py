@@ -28,6 +28,7 @@ from ..utils.paths import (
     get_workspace_storage_path,
 )
 from ..utils.ide_detector import detect_ides, IDEDetector
+from ..utils.translation import get_translation_manager, t
 
 
 class AugmentFreeAPI:
@@ -45,6 +46,7 @@ class AugmentFreeAPI:
         self.current_ide_info = None  # Store current IDE information
         self._config_dir = self._get_config_dir()
         self._first_run_file = self._config_dir / ".augment_free_first_run"
+        self._translation_manager = get_translation_manager()
 
     def set_editor_type(self, editor_name: str, ide_info: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -118,13 +120,13 @@ class AugmentFreeAPI:
             return {
                 "success": True,
                 "data": data,
-                "message": "System information retrieved successfully"
+                "message": t("messages.info.system_info_retrieved")
             }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": "Failed to retrieve system information"
+                "message": t("messages.error.system_info_failed")
             }
 
     def modify_telemetry(self) -> Dict[str, Any]:
@@ -219,6 +221,7 @@ class AugmentFreeAPI:
     def run_all_operations(self) -> Dict[str, Any]:
         """
         Run all cleaning operations in sequence based on IDE type.
+        If multiple IDEs are detected, run operations for all of them.
 
         Returns:
             dict: Combined results from all operations
@@ -232,8 +235,42 @@ class AugmentFreeAPI:
             "telemetry": None,
             "overall_success": True,
             "errors": [],
-            "ide_type": ide_type
+            "ide_type": ide_type,
+            "processed_ides": []
         }
+
+        # Get all detected IDEs for comprehensive cleanup
+        try:
+            detection_result = self.detect_ides()
+            if detection_result["success"] and detection_result.get("ides"):
+                detected_ides = detection_result["ides"]
+                results["processed_ides"] = [ide["display_name"] for ide in detected_ides]
+
+                # Process each detected IDE
+                for ide in detected_ides:
+                    # Temporarily set the IDE info for processing
+                    original_editor = self.editor_type
+                    original_ide_info = self.current_ide_info
+
+                    self.editor_type = ide["name"]
+                    self.current_ide_info = ide
+
+                    # Run operations for this IDE
+                    if ide["ide_type"] == "vscode":
+                        # VSCode series: clean database and workspace
+                        try:
+                            db_result = self.clean_database()
+                            ws_result = self.clean_workspace()
+                        except Exception as e:
+                            results["errors"].append(f"{ide['display_name']}: {str(e)}")
+
+                    # Restore original settings
+                    self.editor_type = original_editor
+                    self.current_ide_info = original_ide_info
+            else:
+                results["processed_ides"] = [self.current_ide_info.get("display_name", self.editor_type) if self.current_ide_info else self.editor_type]
+        except Exception as e:
+            results["errors"].append(f"IDE detection failed: {str(e)}")
 
         # Always modify telemetry IDs (works for both VSCode and JetBrains)
         telemetry_result = self.modify_telemetry()
@@ -257,13 +294,13 @@ class AugmentFreeAPI:
                 results["errors"].append(f"Workspace: {workspace_result.get('error', 'Unknown error')}")
         else:
             # JetBrains: only telemetry modification is needed
-            results["database"] = {"success": True, "message": "不适用于JetBrains IDE"}
-            results["workspace"] = {"success": True, "message": "不适用于JetBrains IDE"}
+            results["database"] = {"success": True, "message": t("messages.info.jetbrains_not_applicable")}
+            results["workspace"] = {"success": True, "message": t("messages.info.jetbrains_not_applicable")}
 
         return {
             "success": results["overall_success"],
             "data": results,
-            "message": "All operations completed" if results["overall_success"] else "Some operations failed"
+            "message": t("messages.success.all_operations_completed") if results["overall_success"] else t("messages.error.some_operations_failed")
         }
 
     def get_status(self) -> Dict[str, Any]:
@@ -276,7 +313,7 @@ class AugmentFreeAPI:
         return {
             "success": True,
             "data": {"status": self.status},
-            "message": "API is ready"
+            "message": t("messages.info.api_ready")
         }
 
     def get_version_info(self) -> Dict[str, Any]:
@@ -510,4 +547,94 @@ class AugmentFreeAPI:
                 "success": False,
                 "error": str(e),
                 "message": f"获取支持操作失败: {str(e)}"
+            }
+
+    def get_current_language(self) -> Dict[str, Any]:
+        """
+        Get the current language setting.
+
+        Returns:
+            dict: Current language information
+        """
+        try:
+            current_lang = self._translation_manager.get_current_language()
+            available_langs = self._translation_manager.get_available_languages()
+
+            return {
+                "success": True,
+                "data": {
+                    "current_language": current_lang,
+                    "available_languages": available_langs
+                },
+                "message": t("messages.info.language_retrieved")
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": t("messages.error.language_get_failed")
+            }
+
+    def set_language(self, language_code: str) -> Dict[str, Any]:
+        """
+        Set the application language.
+
+        Args:
+            language_code (str): Language code (e.g., "zh_CN", "en_US")
+
+        Returns:
+            dict: Operation result
+        """
+        try:
+            success = self._translation_manager.set_language(language_code)
+
+            if success:
+                return {
+                    "success": True,
+                    "data": {
+                        "language": language_code,
+                        "display_name": self._translation_manager.get_available_languages().get(language_code, language_code)
+                    },
+                    "message": t("messages.success.language_changed")
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Invalid language code",
+                    "message": t("messages.error.language_change_failed")
+                }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": t("messages.error.language_change_failed")
+            }
+
+    def get_translations(self, language_code: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Get all translations for a specific language.
+
+        Args:
+            language_code (str, optional): Language code. Uses current language if not specified.
+
+        Returns:
+            dict: All translations for the specified language
+        """
+        try:
+            translations = self._translation_manager.get_all_translations(language_code)
+            current_lang = language_code or self._translation_manager.get_current_language()
+
+            return {
+                "success": True,
+                "data": {
+                    "language": current_lang,
+                    "translations": translations
+                },
+                "message": t("messages.info.translations_retrieved")
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": t("messages.error.translations_get_failed")
             }

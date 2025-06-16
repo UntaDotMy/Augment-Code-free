@@ -16,7 +16,7 @@ def main():
     print("🚀 Starting Free AugmentCode...")
     
     # Command to activate venv and run app
-    cmd = f"& {venv_activate}; python -m augment_free.main"
+    cmd = f"& {venv_activate}; python -c \"import sys; sys.path.insert(0, 'src'); from augment_free.main import main; main()\""
     
     try:
         subprocess.run(["powershell", "-Command", cmd], 

@@ -15,12 +15,22 @@ import json
 class IDEInfo:
     """Information about a detected IDE."""
 
-    def __init__(self, name: str, display_name: str, ide_type: str, config_path: str, icon: str = "📝"):
+    def __init__(self, name: str, display_name: str, ide_type: str, config_path: str, icon: str = "📝", version: str = None, executable_path: str = None):
         self.name = name  # Internal name (e.g., "Code", "VSCodium")
         self.display_name = display_name  # Display name (e.g., "VS Code", "VSCodium")
         self.ide_type = ide_type  # "vscode" or "jetbrains"
         self.config_path = config_path  # Configuration directory path
         self.icon = icon  # Emoji icon for display
+        self.version = version  # IDE version if available
+        self.executable_path = executable_path  # Path to executable if found
+
+        # Verified paths (will be populated by _verify_paths)
+        self.storage_path = None
+        self.db_path = None
+        self.machine_id_path = None
+        self.workspace_storage_path = None
+        self.permanent_device_id_path = None
+        self.permanent_user_id_path = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -29,7 +39,15 @@ class IDEInfo:
             "display_name": self.display_name,
             "ide_type": self.ide_type,
             "config_path": self.config_path,
-            "icon": self.icon
+            "icon": self.icon,
+            "version": self.version,
+            "executable_path": self.executable_path,
+            "storage_path": self.storage_path,
+            "db_path": self.db_path,
+            "machine_id_path": self.machine_id_path,
+            "workspace_storage_path": self.workspace_storage_path,
+            "permanent_device_id_path": self.permanent_device_id_path,
+            "permanent_user_id_path": self.permanent_user_id_path
         }
 
 
@@ -38,6 +56,55 @@ class IDEDetector:
 
     def __init__(self):
         self.detected_ides: List[IDEInfo] = []
+
+    def _verify_ide_paths(self, ide_info: IDEInfo) -> None:
+        """Verify and find actual paths for IDE files and directories."""
+        if not ide_info.config_path or not Path(ide_info.config_path).exists():
+            return
+
+        config_path = Path(ide_info.config_path)
+
+        if ide_info.ide_type == 'jetbrains':
+            # JetBrains IDE paths
+            device_id_file = config_path / "PermanentDeviceId"
+            user_id_file = config_path / "PermanentUserId"
+
+            if device_id_file.exists():
+                ide_info.permanent_device_id_path = str(device_id_file)
+            if user_id_file.exists():
+                ide_info.permanent_user_id_path = str(user_id_file)
+
+        else:
+            # VSCode series paths
+            user_dir = config_path / "User"
+            if user_dir.exists():
+                # Look for globalStorage directory
+                global_storage = user_dir / "globalStorage"
+                if global_storage.exists():
+                    # Check for storage.json
+                    storage_file = global_storage / "storage.json"
+                    if storage_file.exists():
+                        ide_info.storage_path = str(storage_file)
+
+                    # Check for state.vscdb
+                    db_file = global_storage / "state.vscdb"
+                    if db_file.exists():
+                        ide_info.db_path = str(db_file)
+
+                # Check for machineid file
+                machine_id_file = user_dir / "machineid"
+                if machine_id_file.exists():
+                    ide_info.machine_id_path = str(machine_id_file)
+
+                # Check for workspaceStorage directory
+                workspace_storage = user_dir / "workspaceStorage"
+                if workspace_storage.exists():
+                    ide_info.workspace_storage_path = str(workspace_storage)
+
+            # Also check for machineid in root config directory (some versions)
+            root_machine_id = config_path / "machineid"
+            if root_machine_id.exists() and not ide_info.machine_id_path:
+                ide_info.machine_id_path = str(root_machine_id)
 
     def get_standard_directories(self) -> List[Path]:
         """Get standard directories where IDEs might store configuration."""
@@ -78,6 +145,7 @@ class IDEDetector:
         # Known VSCode variant names and their display info
         known_variants = {
             "Code": {"display": "VS Code", "icon": "💙"},
+            "Code - Insiders": {"display": "VS Code Insiders", "icon": "💙"},
             "VSCodium": {"display": "VSCodium", "icon": "🔷"},
             "Cursor": {"display": "Cursor", "icon": "🎯"},
             "Code - OSS": {"display": "Code - OSS", "icon": "🔶"},
@@ -105,13 +173,22 @@ class IDEDetector:
                             global_storage = user_dir / "globalStorage"
 
                             if user_dir.exists() and global_storage.exists():
-                                vscode_variants.append(IDEInfo(
+                                # Try to get version information
+                                version = self._get_vscode_version(item)
+
+                                ide_info = IDEInfo(
                                     name=variant_name,
                                     display_name=variant_info["display"],
                                     ide_type="vscode",
                                     config_path=str(item),
-                                    icon=variant_info["icon"]
-                                ))
+                                    icon=variant_info["icon"],
+                                    version=version
+                                )
+
+                                # Verify and find actual paths
+                                self._verify_ide_paths(ide_info)
+
+                                vscode_variants.append(ide_info)
                                 break
             except (PermissionError, OSError):
                 # Skip directories we can't access
@@ -156,13 +233,22 @@ class IDEDetector:
                         if pattern.lower() in item_name.lower():
                             # Verify it's a valid JetBrains IDE directory
                             if self._is_valid_jetbrains_dir(item):
-                                jetbrains_ides.append(IDEInfo(
+                                # Try to get version information
+                                version = self._get_jetbrains_version(item)
+
+                                ide_info = IDEInfo(
                                     name=item_name,
                                     display_name=info["display"],
                                     ide_type="jetbrains",
                                     config_path=str(item),
-                                    icon=info["icon"]
-                                ))
+                                    icon=info["icon"],
+                                    version=version
+                                )
+
+                                # Verify and find actual paths
+                                self._verify_ide_paths(ide_info)
+
+                                jetbrains_ides.append(ide_info)
                                 break
             except (PermissionError, OSError):
                 continue
@@ -174,6 +260,59 @@ class IDEDetector:
         # Look for common JetBrains configuration files/directories
         indicators = ["options", "config", "system", "plugins"]
         return any((path / indicator).exists() for indicator in indicators)
+
+    def _get_vscode_version(self, config_path: Path) -> str:
+        """Try to get VSCode version from configuration."""
+        try:
+            # Try to read from product.json or other version files
+            product_json = config_path / "product.json"
+            if product_json.exists():
+                with open(product_json, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return data.get('version', 'Unknown')
+
+            # Try to read from User/settings.json or other files
+            user_dir = config_path / "User"
+            if user_dir.exists():
+                # Look for any version indicators in the user directory
+                for file in user_dir.glob("*.json"):
+                    try:
+                        with open(file, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            if 'version' in data:
+                                return data['version']
+                    except:
+                        continue
+        except:
+            pass
+        return None
+
+    def _get_jetbrains_version(self, config_path: Path) -> str:
+        """Try to get JetBrains IDE version from configuration."""
+        try:
+            # JetBrains IDEs often have version info in the directory name
+            dir_name = config_path.name
+            # Extract version from directory name like "IntelliJIdea2023.1"
+            import re
+            version_match = re.search(r'(\d{4}\.\d+)', dir_name)
+            if version_match:
+                return version_match.group(1)
+
+            # Try to read from options or config files
+            options_dir = config_path / "options"
+            if options_dir.exists():
+                for file in options_dir.glob("*.xml"):
+                    try:
+                        with open(file, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                            version_match = re.search(r'version="([^"]+)"', content)
+                            if version_match:
+                                return version_match.group(1)
+                    except:
+                        continue
+        except:
+            pass
+        return None
 
     def detect_all_ides(self) -> List[IDEInfo]:
         """Detect all supported IDEs."""
