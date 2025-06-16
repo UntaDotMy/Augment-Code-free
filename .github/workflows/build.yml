@@ -40,10 +40,13 @@ jobs:
         include:
           - os: windows-latest
             executable_name: AugmentFree_latest.exe
+            platform_suffix: windows
           - os: ubuntu-latest
             executable_name: AugmentFree_latest
+            platform_suffix: linux
           - os: macos-latest
             executable_name: AugmentFree_latest
+            platform_suffix: macos
 
     runs-on: ${{ matrix.os }}
 
@@ -56,7 +59,17 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Cache pip dependencies
+    - name: Cache pip dependencies (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: ~\AppData\Local\pip\Cache
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Cache pip dependencies (Unix)
+      if: runner.os != 'Windows'
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
@@ -100,6 +113,11 @@ jobs:
         else
           python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" src/augment_free/main.py
         fi
+
+        # Rename executable to include platform suffix for release
+        if [ -f "dist/AugmentFree_latest.exe" ]; then
+          cp "dist/AugmentFree_latest.exe" "dist/AugmentFree_latest_${{ matrix.platform_suffix }}.exe"
+        fi
       shell: bash
       timeout-minutes: 20
 
@@ -120,14 +138,41 @@ jobs:
         else
           python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" src/augment_free/main.py
         fi
+
+        # Rename executable to include platform suffix for release
+        if [ -f "dist/AugmentFree_latest" ]; then
+          cp "dist/AugmentFree_latest" "dist/AugmentFree_latest_${{ matrix.platform_suffix }}"
+        fi
       timeout-minutes: 20
+
+    - name: Verify build output
+      run: |
+        echo "📋 Checking build output..."
+        ls -la dist/
+
+        # Check if the platform-specific executable exists
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          if [ -f "dist/AugmentFree_latest_${{ matrix.platform_suffix }}.exe" ]; then
+            echo "✅ Windows executable found"
+          else
+            echo "❌ Windows executable not found"
+            exit 1
+          fi
+        else
+          if [ -f "dist/AugmentFree_latest_${{ matrix.platform_suffix }}" ]; then
+            echo "✅ ${{ runner.os }} executable found"
+          else
+            echo "❌ ${{ runner.os }} executable not found"
+            exit 1
+          fi
+        fi
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.os }}-executable
+        name: ${{ matrix.platform_suffix }}-executable
         path: |
-          dist/${{ matrix.executable_name }}
+          dist/AugmentFree_latest_${{ matrix.platform_suffix }}*
         retention-days: 30
 
   release:
@@ -150,9 +195,9 @@ jobs:
         tag_name: ${{ inputs.version || github.ref_name }}
         name: ${{ inputs.version || github.ref_name }}
         files: |
-          artifacts/windows-latest-executable/AugmentFree_latest.exe
-          artifacts/ubuntu-latest-executable/AugmentFree_latest
-          artifacts/macos-latest-executable/AugmentFree_latest
+          artifacts/windows-executable/AugmentFree_latest_windows.exe
+          artifacts/linux-executable/AugmentFree_latest_linux
+          artifacts/macos-executable/AugmentFree_latest_macos
         draft: false
         prerelease: false
         generate_release_notes: true
@@ -162,9 +207,9 @@ jobs:
           **Modified by UntaDotMy** - Enhanced version with smart IDE detection and multi-language support.
 
           ### 📦 Downloads
-          - **Windows**: `AugmentFree_latest.exe`
-          - **Linux**: `AugmentFree_latest` (Linux)
-          - **macOS**: `AugmentFree_latest` (macOS)
+          - **Windows**: `AugmentFree_latest_windows.exe`
+          - **Linux**: `AugmentFree_latest_linux`
+          - **macOS**: `AugmentFree_latest_macos`
 
           ### ✨ Key Features
           - 🔍 Smart IDE detection with path verification
