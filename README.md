@@ -105,7 +105,7 @@ Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易G
    uv sync --extra build
 
    # 或使用 pip
-   pip install pyinstaller
+   pip install pyinstaller pillow
    ```
 3. 运行构建脚本：
    ```bash

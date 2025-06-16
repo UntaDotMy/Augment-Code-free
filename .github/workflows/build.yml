@@ -36,14 +36,15 @@ jobs:
       uses: astral-sh/setup-uv@v3
       with:
         version: "latest"
+        enable-cache: true
 
     - name: Install dependencies
       run: |
         uv sync
 
-    - name: Install PyInstaller
+    - name: Install PyInstaller and dependencies
       run: |
-        uv add pyinstaller
+        uv add pyinstaller pillow
 
     - name: Check for icon file
       id: check_icon
@@ -59,20 +60,24 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         if [ "${{ steps.check_icon.outputs.icon_exists }}" = "true" ]; then
-          uv run pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" --add-data="app.ico;." src/augment_free/main.py
+          uv run pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" --add-data="app.ico;." --optimize=2 --strip src/augment_free/main.py
         else
-          uv run pyinstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" src/augment_free/main.py
+          uv run pyinstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" --optimize=2 --strip src/augment_free/main.py
         fi
       shell: bash
+      timeout-minutes: 30
 
     - name: Build executable (Linux/macOS)
       if: runner.os != 'Windows'
       run: |
         if [ "${{ steps.check_icon.outputs.icon_exists }}" = "true" ]; then
-          uv run pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --add-data="app.ico:." src/augment_free/main.py
+          # Try with icon first, fallback without icon if it fails
+          uv run pyinstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --add-data="app.ico:." --optimize=2 --strip src/augment_free/main.py || \
+          uv run pyinstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --optimize=2 --strip src/augment_free/main.py
         else
-          uv run pyinstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" src/augment_free/main.py
+          uv run pyinstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" --optimize=2 --strip src/augment_free/main.py
         fi
+      timeout-minutes: 30
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4

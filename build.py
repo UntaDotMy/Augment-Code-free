@@ -34,11 +34,11 @@ def install_dependencies():
         subprocess.run(["uv", "--version"], check=True, capture_output=True)
         print("Using uv for dependency management")
         run_command("uv sync")
-        run_command("uv add pyinstaller")
+        run_command("uv add pyinstaller pillow")
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("uv not found, using pip")
         run_command("pip install -e .")
-        run_command("pip install pyinstaller")
+        run_command("pip install pyinstaller pillow")
 
 
 def build_executable():
@@ -53,16 +53,21 @@ def build_executable():
         "pyinstaller",
         "--onefile",
         "--windowed",
-        "--icon=app.ico",
         "--name=AugmentFree_latest",
         "--add-data=src/augment_free/web{}augment_free/web".format(
             ";" if current_platform == "windows" else ":"
         ),
-        "--add-data=app.ico{}".format(
-            ";." if current_platform == "windows" else ":."
-        ),
+        "--optimize=2",
+        "--strip",
         "src/augment_free/main.py"
     ]
+
+    # Add icon if it exists
+    if Path("app.ico").exists():
+        base_cmd.insert(-1, "--icon=app.ico")
+        base_cmd.insert(-1, "--add-data=app.ico{}".format(
+            ";." if current_platform == "windows" else ":."
+        ))
     
     cmd = " ".join(base_cmd)
     run_command(cmd)

@@ -103,7 +103,7 @@ If you want to build the executable yourself:
    uv sync --extra build
 
    # Or using pip
-   pip install pyinstaller
+   pip install pyinstaller pillow
    ```
 3. Run the build script:
    ```bash
