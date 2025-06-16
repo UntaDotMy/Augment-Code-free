@@ -185,7 +185,7 @@ git commit -m "docs: update README"
 - 修复平台特定可执行文件命名冲突
 - 改进缓存路径配置
 - **修复关键问题**: 清理操作现在使用检测到的实际路径而非硬编码路径
-- 修复 Windows PowerShell 语法错误
+- 修复 Windows PowerShell 语法错误，统一使用 bash shell
 
 ## 使用方法
 
