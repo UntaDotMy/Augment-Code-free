@@ -22,13 +22,15 @@ def _create_backup(file_path: str) -> str:
     shutil.copy2(file_path, backup_path)
     return backup_path
 
-def modify_telemetry_ids(editor_type: str = "VSCodium") -> dict:
+def modify_telemetry_ids(editor_type: str = "VSCodium", storage_path: str = None, machine_id_path: str = None) -> dict:
     """
     Modifies the telemetry IDs in the VS Code/VSCodium storage.json file and machine ID file.
     Creates backups before modification.
 
     Args:
         editor_type (str): Editor type, either "VSCodium" or "Code" (VS Code)
+        storage_path (str, optional): Verified path to storage.json file
+        machine_id_path (str, optional): Verified path to machineid file
 
     This function:
     1. Creates backups of the storage.json and machine ID files
@@ -50,8 +52,11 @@ def modify_telemetry_ids(editor_type: str = "VSCodium") -> dict:
             'editor_type': str
         }
     """
-    storage_path = get_storage_path(editor_type)
-    machine_id_path = get_machine_id_path(editor_type)
+    # Use provided paths or fall back to hardcoded paths
+    if storage_path is None:
+        storage_path = get_storage_path(editor_type)
+    if machine_id_path is None:
+        machine_id_path = get_machine_id_path(editor_type)
 
     if not os.path.exists(storage_path):
         raise FileNotFoundError(f"Storage file not found at: {storage_path}")

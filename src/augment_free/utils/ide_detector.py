@@ -97,9 +97,9 @@ class IDEDetector:
                     ide_info.machine_id_path = str(machine_id_file)
 
                 # Check for workspaceStorage directory
-                workspace_storage = user_dir / "workspaceStorage"
-                if workspace_storage.exists():
-                    ide_info.workspace_storage_path = str(workspace_storage)
+                workspace_storage_dir = user_dir / "workspaceStorage"
+                if workspace_storage_dir.exists():
+                    ide_info.workspace_storage_path = str(workspace_storage_dir)
 
             # Also check for machineid in root config directory (some versions)
             root_machine_id = config_path / "machineid"

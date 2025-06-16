@@ -20,13 +20,14 @@ def _create_backup(file_path: str) -> str:
     shutil.copy2(file_path, backup_path)
     return backup_path
 
-def clean_augment_data(editor_type: str = "VSCodium") -> dict:
+def clean_augment_data(editor_type: str = "VSCodium", db_path: str = None) -> dict:
     """
     Cleans augment-related data from the SQLite database.
     Creates a backup before modification.
 
     Args:
         editor_type (str): Editor type, either "VSCodium" or "Code" (VS Code)
+        db_path (str, optional): Verified path to state.vscdb file
 
     This function:
     1. Gets the SQLite database path
@@ -42,7 +43,9 @@ def clean_augment_data(editor_type: str = "VSCodium") -> dict:
             'editor_type': str
         }
     """
-    db_path = get_db_path(editor_type)
+    # Use provided path or fall back to hardcoded path
+    if db_path is None:
+        db_path = get_db_path(editor_type)
 
     # Create backup before modification
     db_backup_path = _create_backup(db_path)

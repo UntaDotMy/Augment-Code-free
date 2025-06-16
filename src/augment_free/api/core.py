@@ -159,8 +159,19 @@ class AugmentFreeAPI:
                     "message": result.get("message", "JetBrains ID处理完成")
                 }
             else:
-                # Handle VSCode series
-                result = modify_telemetry_ids(self.editor_type)
+                # Handle VSCode series - use verified paths if available
+                storage_path = None
+                machine_id_path = None
+
+                if self.current_ide_info:
+                    storage_path = self.current_ide_info.get("storage_path")
+                    machine_id_path = self.current_ide_info.get("machine_id_path")
+
+                result = modify_telemetry_ids(
+                    editor_type=self.editor_type,
+                    storage_path=storage_path,
+                    machine_id_path=machine_id_path
+                )
                 return {
                     "success": True,
                     "data": result,
@@ -182,7 +193,15 @@ class AugmentFreeAPI:
             dict: Operation result with backup information and deletion count
         """
         try:
-            result = clean_augment_data(self.editor_type)
+            # Use verified path if available
+            db_path = None
+            if self.current_ide_info:
+                db_path = self.current_ide_info.get("db_path")
+
+            result = clean_augment_data(
+                editor_type=self.editor_type,
+                db_path=db_path
+            )
             return {
                 "success": True,
                 "data": result,
@@ -204,7 +223,15 @@ class AugmentFreeAPI:
             dict: Operation result with backup information and deletion count
         """
         try:
-            result = clean_workspace_storage(self.editor_type)
+            # Use verified path if available
+            workspace_storage_path = None
+            if self.current_ide_info:
+                workspace_storage_path = self.current_ide_info.get("workspace_storage_path")
+
+            result = clean_workspace_storage(
+                editor_type=self.editor_type,
+                workspace_storage_path=workspace_storage_path
+            )
             return {
                 "success": True,
                 "data": result,
