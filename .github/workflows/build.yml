@@ -109,9 +109,9 @@ jobs:
 
         # Build with PyInstaller (simplified)
         if [ "${{ steps.check_icon.outputs.icon_exists }}" = "true" ]; then
-          python -m PyInstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" src/augment_free/main.py
+          python -m PyInstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web;web" --add-data="src/augment_free/translations;translations" src/augment_free/main.py
         else
-          python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" src/augment_free/main.py
+          python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web;web" --add-data="src/augment_free/translations;translations" src/augment_free/main.py
         fi
 
         # Rename executable to include platform suffix for release
@@ -129,14 +129,14 @@ jobs:
         # Build with PyInstaller (with fallback for icon issues)
         if [ "${{ steps.check_icon.outputs.icon_exists }}" = "true" ]; then
           # Try with icon first
-          if python -m PyInstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" src/augment_free/main.py; then
+          if python -m PyInstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web:web" --add-data="src/augment_free/translations:translations" src/augment_free/main.py; then
             echo "✅ Build successful with icon"
           else
             echo "⚠️ Icon build failed, trying without icon..."
-            python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" src/augment_free/main.py
+            python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:web" --add-data="src/augment_free/translations:translations" src/augment_free/main.py
           fi
         else
-          python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:augment_free/web" src/augment_free/main.py
+          python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web:web" --add-data="src/augment_free/translations:translations" src/augment_free/main.py
         fi
 
         # Rename executable to include platform suffix for release

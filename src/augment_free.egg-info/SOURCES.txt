@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+src/augment_free/__init__.py
+src/augment_free/main.py
+src/augment_free.egg-info/PKG-INFO
+src/augment_free.egg-info/SOURCES.txt
+src/augment_free.egg-info/dependency_links.txt
+src/augment_free.egg-info/entry_points.txt
+src/augment_free.egg-info/requires.txt
+src/augment_free.egg-info/top_level.txt

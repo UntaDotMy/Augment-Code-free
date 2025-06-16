@@ -31,8 +31,16 @@ class TranslationManager:
 
     def _get_translations_dir(self) -> Path:
         """Get the translations directory path."""
-        current_dir = Path(__file__).parent.parent
-        return current_dir / "translations"
+        import sys
+
+        if getattr(sys, "frozen", False):
+            # Running as PyInstaller bundle
+            base_path = Path(sys._MEIPASS)
+            return base_path / "translations"
+        else:
+            # Running in development
+            current_dir = Path(__file__).parent.parent
+            return current_dir / "translations"
 
     def _get_config_file(self) -> Path:
         """Get the language config file path."""
@@ -69,7 +77,12 @@ class TranslationManager:
 
     def _load_translations(self) -> None:
         """Load all available translation files."""
+        import sys
+
         if not self.translations_dir.exists():
+            # Only show warning in debug mode
+            if getattr(sys, "frozen", False):
+                print(f"Warning: Translation directory not found: {self.translations_dir}")
             return
 
         for file_path in self.translations_dir.glob("*.json"):
@@ -79,6 +92,12 @@ class TranslationManager:
                     self.translations[lang_code] = json.load(f)
             except Exception as e:
                 print(f"Warning: Failed to load translation file {file_path}: {e}")
+
+        # Show loaded translations count
+        if self.translations:
+            print(f"Loaded {len(self.translations)} translation(s): {list(self.translations.keys())}")
+        else:
+            print("Warning: No translations loaded")
 
     def get_available_languages(self) -> Dict[str, str]:
         """

@@ -109,6 +109,7 @@ def main():
     # Paths
     main_script = project_root / "src" / "augment_free" / "main.py"
     web_dir = project_root / "src" / "augment_free" / "web"
+    translations_dir = project_root / "src" / "augment_free" / "translations"
     requirements_file = project_root / "requirements.txt"
 
     # Get current platform
@@ -136,11 +137,13 @@ def main():
     if current_platform == "windows":
         cmd.extend([
             f"--add-data={web_dir};web",  # Include web files (Windows)
+            f"--add-data={translations_dir};translations",  # Include translation files (Windows)
             "--noconsole",  # Hide console window (Windows)
         ])
     else:
         cmd.extend([
             f"--add-data={web_dir}:web",  # Include web files (macOS/Linux)
+            f"--add-data={translations_dir}:translations",  # Include translation files (macOS/Linux)
             "--windowed",  # Hide console window (macOS/Linux)
         ])
 
@@ -188,6 +191,7 @@ def main():
         "augment_free.utils",
         "augment_free.utils.device_codes",
         "augment_free.utils.paths",
+        "augment_free.utils.translation",
     ]
 
     for imp in additional_imports:
