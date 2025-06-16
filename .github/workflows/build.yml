@@ -108,17 +108,17 @@ jobs:
         echo "🔨 Building Windows executable..."
 
         # Build with PyInstaller (simplified)
-        if [ "${{ steps.check_icon.outputs.icon_exists }}" = "true" ]; then
+        if ("${{ steps.check_icon.outputs.icon_exists }}" -eq "true") {
           python -m PyInstaller --onefile --windowed --icon=app.ico --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" src/augment_free/main.py
-        else
+        } else {
           python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --add-data="src/augment_free/web;augment_free/web" src/augment_free/main.py
-        fi
+        }
 
         # Rename executable to include platform suffix for release
-        if [ -f "dist/AugmentFree_latest.exe" ]; then
-          cp "dist/AugmentFree_latest.exe" "dist/AugmentFree_latest_${{ matrix.platform_suffix }}.exe"
-        fi
-      shell: bash
+        if (Test-Path "dist/AugmentFree_latest.exe") {
+          Copy-Item "dist/AugmentFree_latest.exe" "dist/AugmentFree_latest_${{ matrix.platform_suffix }}.exe"
+        }
+      shell: powershell
       timeout-minutes: 20
 
     - name: Build executable (Linux/macOS)
@@ -143,29 +143,36 @@ jobs:
         if [ -f "dist/AugmentFree_latest" ]; then
           cp "dist/AugmentFree_latest" "dist/AugmentFree_latest_${{ matrix.platform_suffix }}"
         fi
+      shell: bash
       timeout-minutes: 20
 
-    - name: Verify build output
+    - name: Verify build output (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        echo "📋 Checking build output..."
+        dir dist\
+
+        if (Test-Path "dist\AugmentFree_latest_${{ matrix.platform_suffix }}.exe") {
+          echo "✅ Windows executable found"
+        } else {
+          echo "❌ Windows executable not found"
+          exit 1
+        }
+      shell: powershell
+
+    - name: Verify build output (Unix)
+      if: runner.os != 'Windows'
       run: |
         echo "📋 Checking build output..."
         ls -la dist/
 
-        # Check if the platform-specific executable exists
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          if [ -f "dist/AugmentFree_latest_${{ matrix.platform_suffix }}.exe" ]; then
-            echo "✅ Windows executable found"
-          else
-            echo "❌ Windows executable not found"
-            exit 1
-          fi
+        if [ -f "dist/AugmentFree_latest_${{ matrix.platform_suffix }}" ]; then
+          echo "✅ ${{ runner.os }} executable found"
         else
-          if [ -f "dist/AugmentFree_latest_${{ matrix.platform_suffix }}" ]; then
-            echo "✅ ${{ runner.os }} executable found"
-          else
-            echo "❌ ${{ runner.os }} executable not found"
-            exit 1
-          fi
+          echo "❌ ${{ runner.os }} executable not found"
+          exit 1
         fi
+      shell: bash
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
