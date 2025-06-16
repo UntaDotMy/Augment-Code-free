@@ -7,7 +7,7 @@ name = "augment-free"
 version = "0.2.0"
 description = "Free AugmentCode - A tool for cleaning AugmentCode related data with modern GUI (Modified by UntaDotMy)"
 readme = "README.md"
-license = "MIT"
+license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
     { name = "vagmr"},
@@ -17,7 +17,7 @@ keywords = ["augmentcode", "vscode", "telemetry", "cleaner", "gui"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -49,6 +49,10 @@ Homepage = "https://github.com/UntaDotMy/Augment-Code-free"
 Repository = "https://github.com/UntaDotMy/Augment-Code-free"
 Issues = "https://github.com/UntaDotMy/Augment-Code-free/issues"
 Original = "https://github.com/vagmr/Augment-Code-free"
+
+[tool.setuptools]
+packages = ["augment_free"]
+package-dir = {"" = "src"}
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/augment_free"]
