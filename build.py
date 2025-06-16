@@ -160,6 +160,8 @@ def build_debug_executable():
         "augment_free.utils.paths",
         "augment_free.utils.ide_detector",
         "augment_free.utils.translation",
+        "augment_free.api.handlers.automation",
+        "psutil",
     ]
 
     for imp in hidden_imports:

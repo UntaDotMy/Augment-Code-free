@@ -17,7 +17,10 @@ from .handlers import (
     clean_workspace_storage,
     modify_jetbrains_ids,
     get_jetbrains_config_dir,
-    get_jetbrains_info
+    get_jetbrains_info,
+    run_full_automation,
+    close_ide_processes,
+    start_ide
 )
 from ..utils.paths import (
     get_home_dir,
@@ -329,6 +332,166 @@ class AugmentFreeAPI:
             "data": results,
             "message": t("messages.success.all_operations_completed") if results["overall_success"] else t("messages.error.some_operations_failed")
         }
+
+    def run_full_automation(self, options: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Run the complete automation workflow:
+        1. Auto Signout (close IDE)
+        2. Auto DB Cleaning (clean all data)
+        3. Auto Signin (ready for new login)
+        4. Auto Restart IDE
+
+        Args:
+            options: Automation options
+                - include_signout: bool (default: True)
+                - include_cleaning: bool (default: True)
+                - include_signin: bool (default: True)
+                - include_restart: bool (default: True)
+                - target_ide: str (optional, IDE display name to target)
+
+        Returns:
+            dict: Automation results
+        """
+        try:
+            if options is None:
+                options = {}
+
+            # Get target IDE
+            target_ide = None
+            target_ide_name = options.get("target_ide")
+
+            if target_ide_name:
+                # Find specific IDE
+                detection_result = self.detect_ides()
+                if detection_result["success"] and detection_result.get("ides"):
+                    for ide in detection_result["ides"]:
+                        if ide.get("display_name") == target_ide_name:
+                            target_ide = ide
+                            break
+
+                if target_ide is None:
+                    return {
+                        "success": False,
+                        "error": f"Target IDE '{target_ide_name}' not found",
+                        "message": t("messages.error.ide_not_found")
+                    }
+            else:
+                # Use current IDE or auto-detect
+                target_ide = self.current_ide_info
+
+            # Run automation
+            result = run_full_automation(
+                ide_info=target_ide,
+                include_signout=options.get("include_signout", True),
+                include_cleaning=options.get("include_cleaning", True),
+                include_signin=options.get("include_signin", True),
+                include_restart=options.get("include_restart", True)
+            )
+
+            return {
+                "success": result["success"],
+                "data": result,
+                "message": result["message"]
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": t("messages.error.automation_failed")
+            }
+
+    def close_ide(self, ide_name: str = None) -> Dict[str, Any]:
+        """
+        Close IDE processes.
+
+        Args:
+            ide_name: Specific IDE name to close, if None uses current IDE
+
+        Returns:
+            dict: Operation result
+        """
+        try:
+            target_ide = None
+
+            if ide_name:
+                # Find specific IDE
+                detection_result = self.detect_ides()
+                if detection_result["success"] and detection_result.get("ides"):
+                    for ide in detection_result["ides"]:
+                        if ide.get("display_name") == ide_name:
+                            target_ide = ide
+                            break
+            else:
+                target_ide = self.current_ide_info
+
+            if target_ide is None:
+                return {
+                    "success": False,
+                    "error": "No IDE specified or detected",
+                    "message": t("messages.error.no_ide_detected")
+                }
+
+            result = close_ide_processes(target_ide)
+
+            return {
+                "success": result["success"],
+                "data": result,
+                "message": result["message"]
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": t("messages.error.close_ide_failed")
+            }
+
+    def start_ide(self, ide_name: str = None) -> Dict[str, Any]:
+        """
+        Start IDE.
+
+        Args:
+            ide_name: Specific IDE name to start, if None uses current IDE
+
+        Returns:
+            dict: Operation result
+        """
+        try:
+            target_ide = None
+
+            if ide_name:
+                # Find specific IDE
+                detection_result = self.detect_ides()
+                if detection_result["success"] and detection_result.get("ides"):
+                    for ide in detection_result["ides"]:
+                        if ide.get("display_name") == ide_name:
+                            target_ide = ide
+                            break
+            else:
+                target_ide = self.current_ide_info
+
+            if target_ide is None:
+                return {
+                    "success": False,
+                    "error": "No IDE specified or detected",
+                    "message": t("messages.error.no_ide_detected")
+                }
+
+            result = start_ide(target_ide)
+
+            return {
+                "success": result["success"],
+                "data": result,
+                "message": result["message"]
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": t("messages.error.start_ide_failed")
+            }
 
     def get_status(self) -> Dict[str, Any]:
         """

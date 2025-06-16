@@ -25,6 +25,7 @@ Requires-Dist: pywebview>=4.4.0
 Requires-Dist: jinja2>=3.1.0
 Requires-Dist: pyinstaller>=6.14.1
 Requires-Dist: pillow>=11.2.1
+Requires-Dist: psutil>=5.9.0
 Provides-Extra: dev
 Requires-Dist: black>=23.0.0; extra == "dev"
 Requires-Dist: isort>=5.12.0; extra == "dev"
@@ -101,6 +102,14 @@ Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易G
   - **路径验证** - 只显示实际存在的文件和目录
   - **安全复制** - 防止路径复制时的转义问题
 
+- 🤖 **全自动流程 (***新增***)**
+  - **一键自动化** - 完整的自动化工作流程
+  - **自动登出** - 智能检测并关闭IDE进程
+  - **自动清理** - 执行所有必要的数据清理操作
+  - **自动重启** - 清理完成后自动重新启动IDE
+  - **可定制选项** - 支持选择性执行各个步骤
+  - **详细进度反馈** - 实时显示每个步骤的执行状态
+
 
 ## 安装说明
 
@@ -130,28 +139,44 @@ Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易G
    pip install -e .
    ```
 
-### 方式三：构建可执行文件
+### 方式三：本地构建可执行文件（推荐）
 
-如果你想自己构建可执行文件：
+#### **自动构建脚本（一键构建）**：
 
-1. 克隆仓库并安装依赖（参考方式二）
-2. 安装构建依赖：
-   ```bash
-   # 使用 uv
-   uv sync --extra build
+**Windows 用户**：
+```bash
+# 双击运行或命令行执行（自动构建两个版本）
+build.bat
+```
 
-   # 或使用 pip
-   pip install pyinstaller pillow
-   ```
-3. 运行构建脚本：
-   ```bash
-   # 使用 Python 脚本（推荐）
-   python build.py
+**Linux/macOS 用户**：
+```bash
+# 赋予执行权限并运行（自动构建两个版本）
+chmod +x build.sh
+./build.sh
+```
 
-   # Windows 用户也可以使用
-   build.bat
-   ```
-4. 构建完成后，可执行文件将在 `dist/` 目录中
+#### **自动构建两个版本**：
+- **🚀 AugmentFree_latest.exe**: 发布版本，无控制台窗口，适合日常使用
+- **🔧 AugmentFree_debug.exe**: 调试版本，带控制台窗口，显示详细错误信息
+
+#### **手动构建（高级用户）**：
+```bash
+# 1. 安装依赖
+pip install -r requirements.txt
+
+# 2. 运行构建脚本
+python build.py
+```
+
+#### **故障排除**：
+- ❌ **typing 包冲突**: 构建脚本会自动移除冲突的 typing 包
+- ❌ **可执行文件无法运行**: 先运行 `AugmentFree_debug.exe` 查看错误信息
+- ❌ **缺少依赖**: 构建脚本会自动安装所有依赖
+- ❌ **路径问题**: 确保在项目根目录运行 `build.bat`
+- ❌ **权限问题**: 以管理员身份运行命令提示符
+
+> **💡 提示**: 构建脚本会自动处理常见问题，包括移除冲突包、清理旧构建、安装依赖等
 
 ### 方式四：自动版本发布系统
 
@@ -222,6 +247,13 @@ git commit -m "docs: update README"
 - 改进缓存路径配置
 - **修复关键问题**: 清理操作现在使用检测到的实际路径而非硬编码路径
 - 修复 Windows PowerShell 语法错误，统一使用 bash shell
+- **重大改进**: 增强本地构建脚本，添加自动依赖安装和调试版本
+- 添加详细错误处理和诊断信息
+- **修复构建错误**: 移除冲突的 typing 包，简化隐藏导入，统一构建脚本
+- **修复运行时错误**: 解决 Unicode 编码问题和 Web 文件路径问题
+- **修复翻译系统**: 确保翻译文件正确打包到可执行文件中
+- **更新构建系统**: 统一所有构建脚本和 GitHub Actions，确保翻译文件包含
+- **🤖 全自动流程**: 实现一键自动化：自动登出 → 清理数据 → 准备登录 → 重启IDE
 
 ## 使用方法
 

@@ -64,6 +64,28 @@
         "description": "Execute all cleanup operations (recommended)",
         "button": "Execute Now"
       },
+      "automation": {
+        "title": "🤖 Full Automation",
+        "description": "Auto Signout → Clean Data → Prepare Signin → Restart IDE",
+        "button": "Start Automation",
+        "signout_step": "1. Auto Signout",
+        "cleaning_step": "2. Clean Data",
+        "signin_step": "3. Prepare Signin",
+        "restart_step": "4. Restart IDE",
+        "options": {
+          "title": "🤖 Full Automation Options",
+          "include_signout": "Include Auto Signout",
+          "include_cleaning": "Include Data Cleaning",
+          "include_signin": "Include Signin Preparation",
+          "include_restart": "Include IDE Restart",
+          "signout_desc": "Close currently running IDE processes",
+          "cleaning_desc": "Clean telemetry data, database and workspace",
+          "signin_desc": "Prepare IDE for new Augment login",
+          "restart_desc": "Automatically restart the IDE",
+          "cancel": "Cancel",
+          "start": "Start Automation"
+        }
+      },
       "preview": {
         "title": "Operation Preview",
         "current_values": "Current Values",
@@ -131,13 +153,21 @@
       "workspace_cleaned": "Workspace cleaned successfully. Deleted {count} files.",
       "all_operations_completed": "All operations completed",
       "jetbrains_ids_modified": "JetBrains ID processing completed",
-      "language_changed": "Language switched to English"
+      "language_changed": "Language switched to English",
+      "automation_completed": "Automation workflow completed",
+      "ide_closed": "IDE closed",
+      "ide_started": "IDE started"
     },
     "error": {
       "telemetry_failed": "Failed to modify telemetry IDs",
       "database_failed": "Failed to clean database",
       "workspace_failed": "Failed to clean workspace",
       "some_operations_failed": "Some operations failed",
+      "automation_failed": "Automation workflow failed",
+      "ide_not_found": "Specified IDE not found",
+      "no_ide_detected": "No IDE detected",
+      "close_ide_failed": "Failed to close IDE",
+      "start_ide_failed": "Failed to start IDE",
       "jetbrains_config_not_found": "JetBrains configuration directory not found",
       "jetbrains_config_not_found_detail": "Unable to find JetBrains configuration directory",
       "system_info_failed": "Failed to retrieve system information",

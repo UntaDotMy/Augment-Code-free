@@ -82,7 +82,7 @@ if errorlevel 1 (
 )
 
 echo [3/5] Building debug version (with console)...
-python -m PyInstaller --onefile --console --name=AugmentFree_debug --clean --noconfirm --add-data="src/augment_free/web;web" --add-data="src/augment_free/translations;translations" --icon=app.ico --hidden-import=pywebview --hidden-import=jinja2 --hidden-import=augment_free --hidden-import=augment_free.api --hidden-import=augment_free.utils src/augment_free/main.py
+python -m PyInstaller --onefile --console --name=AugmentFree_debug --clean --noconfirm --add-data="src/augment_free/web;web" --add-data="src/augment_free/translations;translations" --icon=app.ico --hidden-import=pywebview --hidden-import=jinja2 --hidden-import=augment_free --hidden-import=augment_free.api --hidden-import=augment_free.utils --hidden-import=augment_free.api.handlers.automation --hidden-import=psutil src/augment_free/main.py
 
 if not exist "dist\AugmentFree_debug.exe" (
     echo ERROR: Debug build failed
@@ -91,7 +91,7 @@ if not exist "dist\AugmentFree_debug.exe" (
 )
 
 echo [4/5] Building release version (no console)...
-python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --clean --noconfirm --add-data="src/augment_free/web;web" --add-data="src/augment_free/translations;translations" --icon=app.ico --hidden-import=pywebview --hidden-import=jinja2 --hidden-import=augment_free --hidden-import=augment_free.api --hidden-import=augment_free.utils src/augment_free/main.py
+python -m PyInstaller --onefile --windowed --name=AugmentFree_latest --clean --noconfirm --add-data="src/augment_free/web;web" --add-data="src/augment_free/translations;translations" --icon=app.ico --hidden-import=pywebview --hidden-import=jinja2 --hidden-import=augment_free --hidden-import=augment_free.api --hidden-import=augment_free.utils --hidden-import=augment_free.api.handlers.automation --hidden-import=psutil src/augment_free/main.py
 
 echo [5/5] Checking results...
 if exist "dist\AugmentFree_latest.exe" (

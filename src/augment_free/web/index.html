@@ -115,6 +115,31 @@
                                         立即执行
                                     </button>
                                 </div>
+
+                                <!-- Full Automation -->
+                                <div class="automation-section">
+                                    <div class="automation-content">
+                                        <div class="automation-icon">🤖</div>
+                                        <div class="automation-text">
+                                            <h3 data-i18n="ui.operations.automation.title">🤖 全自动流程</h3>
+                                            <p data-i18n="ui.operations.automation.description">自动登出 → 清理数据 → 准备登录 → 重启IDE</p>
+                                            <div class="automation-steps">
+                                                <span class="automation-step" data-i18n="ui.operations.automation.signout_step">1. 自动登出</span>
+                                                <span class="automation-step" data-i18n="ui.operations.automation.cleaning_step">2. 清理数据</span>
+                                                <span class="automation-step" data-i18n="ui.operations.automation.signin_step">3. 准备登录</span>
+                                                <span class="automation-step" data-i18n="ui.operations.automation.restart_step">4. 重启IDE</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="automation-controls">
+                                        <button class="automation-btn" onclick="runFullAutomation()" id="automationBtn" data-i18n="ui.operations.automation.button">
+                                            启动全自动
+                                        </button>
+                                        <button class="automation-options-btn" onclick="showAutomationOptions()" title="自定义选项">
+                                            ⚙️
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -198,6 +223,60 @@
                         <p data-i18n="ui.about.disclaimer_warranty">无担保：本软件按"现状"提供，不提供任何明示或暗示的担保。</p>
                         <p data-i18n="ui.about.disclaimer_commercial">商业使用：本项目采用MIT开源协议，所有商业售卖行为均与本人无关</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Automation Options Modal -->
+    <div class="modal-overlay" id="automationOptionsModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="ui.operations.automation.options.title">🤖 全自动流程选项</h2>
+                <button class="modal-close" onclick="hideAutomationOptionsModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="automation-options">
+                    <div class="option-group">
+                        <label class="option-item">
+                            <input type="checkbox" id="includeSignout" checked>
+                            <span class="checkmark"></span>
+                            <span data-i18n="ui.operations.automation.options.include_signout">包含自动登出</span>
+                        </label>
+                        <p class="option-description" data-i18n="ui.operations.automation.options.signout_desc">关闭当前运行的IDE进程</p>
+                    </div>
+
+                    <div class="option-group">
+                        <label class="option-item">
+                            <input type="checkbox" id="includeCleaning" checked>
+                            <span class="checkmark"></span>
+                            <span data-i18n="ui.operations.automation.options.include_cleaning">包含数据清理</span>
+                        </label>
+                        <p class="option-description" data-i18n="ui.operations.automation.options.cleaning_desc">清理遥测数据、数据库和工作区</p>
+                    </div>
+
+                    <div class="option-group">
+                        <label class="option-item">
+                            <input type="checkbox" id="includeSignin" checked>
+                            <span class="checkmark"></span>
+                            <span data-i18n="ui.operations.automation.options.include_signin">包含登录准备</span>
+                        </label>
+                        <p class="option-description" data-i18n="ui.operations.automation.options.signin_desc">准备IDE以供新的Augment登录</p>
+                    </div>
+
+                    <div class="option-group">
+                        <label class="option-item">
+                            <input type="checkbox" id="includeRestart" checked>
+                            <span class="checkmark"></span>
+                            <span data-i18n="ui.operations.automation.options.include_restart">包含IDE重启</span>
+                        </label>
+                        <p class="option-description" data-i18n="ui.operations.automation.options.restart_desc">自动重新启动IDE</p>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="hideAutomationOptionsModal()" data-i18n="ui.operations.automation.options.cancel">取消</button>
+                    <button class="btn-primary" onclick="runCustomAutomation()" data-i18n="ui.operations.automation.options.start">开始自动化</button>
                 </div>
             </div>
         </div>

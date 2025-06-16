@@ -1166,6 +1166,226 @@ async function runAllOperations() {
     }
 }
 
+// Full Automation Workflow
+async function runFullAutomation() {
+    if (isOperationRunning || !checkAPIAvailable()) return;
+
+    showLoading(t('ui.loading.processing'));
+
+    try {
+        const result = await pywebview.api.run_full_automation();
+        displayAutomationResults(result);
+
+        // Refresh system info after automation
+        setTimeout(() => {
+            loadSystemInfo();
+            autoDetectIDEsOnStartup();
+        }, 3000);
+    } catch (error) {
+        displayResults(t('ui.operations.automation.title'), {
+            success: false,
+            error: error.message,
+            message: t('messages.error.automation_failed')
+        });
+    } finally {
+        hideLoading();
+    }
+}
+
+// Show automation options modal
+function showAutomationOptions() {
+    const modal = document.getElementById('automationOptionsModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+    }
+}
+
+// Hide automation options modal
+function hideAutomationOptionsModal() {
+    const modal = document.getElementById('automationOptionsModal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+}
+
+// Run custom automation with options
+async function runCustomAutomation() {
+    if (isOperationRunning || !checkAPIAvailable()) return;
+
+    // Get options from checkboxes
+    const options = {
+        include_signout: document.getElementById('includeSignout').checked,
+        include_cleaning: document.getElementById('includeCleaning').checked,
+        include_signin: document.getElementById('includeSignin').checked,
+        include_restart: document.getElementById('includeRestart').checked
+    };
+
+    hideAutomationOptionsModal();
+    showLoading(t('ui.loading.processing'));
+
+    try {
+        const result = await pywebview.api.run_full_automation(options);
+        displayAutomationResults(result);
+
+        // Refresh system info after automation
+        setTimeout(() => {
+            loadSystemInfo();
+            autoDetectIDEsOnStartup();
+        }, 3000);
+    } catch (error) {
+        displayResults(t('ui.operations.automation.title'), {
+            success: false,
+            error: error.message,
+            message: t('messages.error.automation_failed')
+        });
+    } finally {
+        hideLoading();
+    }
+}
+
+// Display automation results
+function displayAutomationResults(result) {
+    if (!result || !result.data) {
+        displayResults(t('ui.operations.automation.title'), {
+            success: false,
+            message: t('messages.error.automation_failed')
+        });
+        return;
+    }
+
+    const data = result.data;
+    const steps = data.steps || {};
+    const ideInfo = data.ide_info || {};
+    const ideName = ideInfo.display_name || 'IDE';
+
+    let content = `
+        <div class="automation-results">
+            <div class="automation-header">
+                <h3>🤖 ${t('ui.operations.automation.title')} - ${ideName}</h3>
+                <p class="automation-status ${result.success ? 'success' : 'error'}">
+                    ${result.success ? '✅ 完成' : '❌ 部分失败'}
+                </p>
+            </div>
+            <div class="automation-steps-results">
+    `;
+
+    // Step 1: Signout
+    if (steps.signout) {
+        const step = steps.signout;
+        content += `
+            <div class="step-result ${step.success ? 'success' : 'error'}">
+                <div class="step-icon">${step.success ? '✅' : '❌'}</div>
+                <div class="step-content">
+                    <h4>${t('ui.operations.automation.signout_step')}</h4>
+                    <p>${step.message}</p>
+                    ${step.closed_processes ? `<small>关闭了 ${step.closed_processes} 个进程</small>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    // Step 2: Cleaning
+    if (steps.cleaning) {
+        const cleaning = steps.cleaning;
+        content += `
+            <div class="step-result">
+                <div class="step-icon">🧹</div>
+                <div class="step-content">
+                    <h4>${t('ui.operations.automation.cleaning_step')}</h4>
+        `;
+
+        // Show individual cleaning results
+        if (cleaning.telemetry) {
+            const tel = cleaning.telemetry;
+            content += `<p class="${tel.success ? 'success' : 'error'}">
+                ${tel.success ? '✅' : '❌'} 遥测数据: ${tel.message}
+            </p>`;
+        }
+
+        if (cleaning.database) {
+            const db = cleaning.database;
+            content += `<p class="${db.success ? 'success' : 'error'}">
+                ${db.success ? '✅' : '❌'} 数据库: ${db.message}
+            </p>`;
+        }
+
+        if (cleaning.workspace) {
+            const ws = cleaning.workspace;
+            content += `<p class="${ws.success ? 'success' : 'error'}">
+                ${ws.success ? '✅' : '❌'} 工作区: ${ws.message}
+            </p>`;
+        }
+
+        content += `
+                </div>
+            </div>
+        `;
+    }
+
+    // Step 3: Signin preparation
+    if (steps.signin) {
+        const step = steps.signin;
+        content += `
+            <div class="step-result ${step.success ? 'success' : 'error'}">
+                <div class="step-icon">${step.success ? '✅' : '❌'}</div>
+                <div class="step-content">
+                    <h4>${t('ui.operations.automation.signin_step')}</h4>
+                    <p>${step.message}</p>
+                    ${step.instructions ? `
+                        <div class="signin-instructions">
+                            <h5>下一步操作:</h5>
+                            <ul>
+                                ${step.instructions.map(instruction => `<li>${instruction}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    // Step 4: Restart
+    if (steps.restart) {
+        const step = steps.restart;
+        content += `
+            <div class="step-result ${step.success ? 'success' : 'error'}">
+                <div class="step-icon">${step.success ? '✅' : '❌'}</div>
+                <div class="step-content">
+                    <h4>${t('ui.operations.automation.restart_step')}</h4>
+                    <p>${step.message}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    content += `
+            </div>
+        </div>
+    `;
+
+    // Show errors if any
+    if (data.errors && data.errors.length > 0) {
+        content += `
+            <div class="automation-errors">
+                <h4>⚠️ 错误详情:</h4>
+                <ul>
+                    ${data.errors.map(error => `<li>${error}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    displayResults(t('ui.operations.automation.title'), {
+        success: result.success,
+        message: result.message,
+        customContent: content
+    });
+}
+
 // Display operation results
 function displayResults(operationName, result) {
     const resultClass = result.success ? 'success' : 'error';

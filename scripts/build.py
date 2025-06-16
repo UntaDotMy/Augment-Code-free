@@ -192,6 +192,8 @@ def main():
         "augment_free.utils.device_codes",
         "augment_free.utils.paths",
         "augment_free.utils.translation",
+        "augment_free.api.handlers.automation",
+        "psutil",
     ]
 
     for imp in additional_imports:

@@ -64,6 +64,28 @@
         "description": "执行所有清理操作（推荐）",
         "button": "立即执行"
       },
+      "automation": {
+        "title": "🤖 全自动流程",
+        "description": "自动登出 → 清理数据 → 准备登录 → 重启IDE",
+        "button": "启动全自动",
+        "signout_step": "1. 自动登出",
+        "cleaning_step": "2. 清理数据",
+        "signin_step": "3. 准备登录",
+        "restart_step": "4. 重启IDE",
+        "options": {
+          "title": "🤖 全自动流程选项",
+          "include_signout": "包含自动登出",
+          "include_cleaning": "包含数据清理",
+          "include_signin": "包含登录准备",
+          "include_restart": "包含IDE重启",
+          "signout_desc": "关闭当前运行的IDE进程",
+          "cleaning_desc": "清理遥测数据、数据库和工作区",
+          "signin_desc": "准备IDE以供新的Augment登录",
+          "restart_desc": "自动重新启动IDE",
+          "cancel": "取消",
+          "start": "开始自动化"
+        }
+      },
       "preview": {
         "title": "操作预览",
         "current_values": "当前值",
@@ -131,13 +153,21 @@
       "workspace_cleaned": "工作区清理成功。删除了 {count} 个文件。",
       "all_operations_completed": "所有操作已完成",
       "jetbrains_ids_modified": "JetBrains ID处理完成",
-      "language_changed": "语言已切换为中文"
+      "language_changed": "语言已切换为中文",
+      "automation_completed": "自动化流程已完成",
+      "ide_closed": "IDE已关闭",
+      "ide_started": "IDE已启动"
     },
     "error": {
       "telemetry_failed": "遥测ID修改失败",
       "database_failed": "数据库清理失败",
       "workspace_failed": "工作区清理失败",
       "some_operations_failed": "部分操作失败",
+      "automation_failed": "自动化流程失败",
+      "ide_not_found": "未找到指定的IDE",
+      "no_ide_detected": "未检测到IDE",
+      "close_ide_failed": "关闭IDE失败",
+      "start_ide_failed": "启动IDE失败",
       "jetbrains_config_not_found": "JetBrains配置目录未找到",
       "jetbrains_config_not_found_detail": "无法找到JetBrains配置目录",
       "system_info_failed": "获取系统信息失败",
