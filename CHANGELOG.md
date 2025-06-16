@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- 
+
+### Enhanced
+- 
+
+### Fixed
+- 
+
+### Technical
+- 
+
+## [v1.1.1] - 2025-06-16
+
+### Added
 - 🤖 **Full Automation Workflow** - Complete 4-step automation process
   - Auto Signout: Intelligent IDE process detection and closure
   - Auto Cleaning: Comprehensive data cleaning (telemetry, database, workspace)
@@ -59,7 +73,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📊 Semantic versioning implementation
 - 🤖 Intelligent commit message parsing
 - 🚀 Automated release pipeline
-
 ---
 
 ## About This Modified Version
