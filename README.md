@@ -47,10 +47,11 @@ Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易G
 - 💙 **VSCode 系列支持 (***增强***) (vscode，vscodium,cursor,VS Code Insiders等)**
   - 重置设备 ID 和机器 ID（Telemetry）
   - 清理 SQLite 数据库中的特定记录
-  - 清理工作区存储文件
+  - 清理工作区存储文件和全局存储文件
   - 自动备份原始数据
   - **智能路径检测** - 自动查找并验证所有相关文件路径
   - **支持 VS Code Insiders** - 完整支持 Insiders 版本
+  - **完整存储清理** - 同时清理 workspaceStorage 和 globalStorage 目录
 
 - 🧠 **JetBrains 系列支持 (***增强***) (idea,pycharm,goland等)**
   - 重置 PermanentDeviceId 和 PermanentUserId
@@ -75,14 +76,15 @@ Augment-Code-Free 是一个用于清理 AugmentCode插件 相关数据的简易G
   - **API 集成** - 完整的 Augment API 端点集成
   - **多语言支持** - 完整的中英文界面
 
-- 🤖 **全自动流程 (***新增***)**
+- 🤖 **全自动流程 (***增强***)**
   - **一键自动化** - 完整的自动化工作流程
   - **自动登出** - 智能检测并关闭IDE进程
-  - **自动清理** - 执行所有必要的数据清理操作
+  - **自动清理** - 执行所有必要的数据清理操作（包括全局存储和工作区存储）
   - **自动重启** - 清理完成后自动重新启动IDE
   - **可定制选项** - 支持选择性执行各个步骤
   - **详细进度反馈** - 实时显示每个步骤的执行状态
   - **智能结果展示** - 复杂操作完成后不自动关闭，用户可详细查看结果
+  - **完整存储清理** - 自动化流程现在包含 globalStorage 和 workspaceStorage 的完整清理
 
 - 🌐 **完善的多语言支持 (***增强***)**
   - **即时语言切换** - 中文/英文切换无需刷新，立即生效

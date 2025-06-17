@@ -21,10 +21,13 @@ except ImportError:
 
 from ..handlers.telemetry import modify_telemetry_ids
 from ..handlers.database import clean_augment_data
-from ..handlers.workspace import clean_workspace_storage
-from ..handlers.jetbrains import modify_jetbrains_ids
+from ..handlers.workspace import clean_workspace_storage, clean_global_storage
+from ..handlers.jetbrains import modify_jetbrains_ids, get_jetbrains_config_dir
 from ...utils.ide_detector import detect_ides, IDEDetector
 from ...utils.translation import t
+from ...utils.session_manager import clear_session_data, get_session_status
+from ...utils.paths import get_storage_path, get_db_path, get_workspace_storage_path, get_global_storage_path, get_machine_id_path
+from ...utils.operation_reporter import report_automation_summary
 
 
 def find_ide_processes(ide_info: Dict[str, Any]) -> List[psutil.Process]:
@@ -244,7 +247,8 @@ def run_full_automation(ide_info: Optional[Dict[str, Any]] = None,
                         cleaning_results[ide_name] = {
                             "telemetry": cleaning_result,
                             "database": {"success": True, "message": "Not applicable for JetBrains"},
-                            "workspace": {"success": True, "message": "Not applicable for JetBrains"}
+                            "workspace": {"success": True, "message": "Not applicable for JetBrains"},
+                            "global_storage": {"success": True, "message": "Not applicable for JetBrains"}
                         }
                     else:
                         # VSCode-based: full cleaning
@@ -307,29 +311,84 @@ def run_full_automation(ide_info: Optional[Dict[str, Any]] = None,
                                 "message": "Failed to clean database"
                             }
                         
+                        # Session data clearing (before workspace cleaning)
+                        try:
+                            print(f"    - Clearing session data for {ide_name}...")
+                            session_result = clear_session_data(editor_type)
+                            ide_cleaning_results["session"] = {
+                                "success": session_result["success"],
+                                "data": session_result,
+                                "message": f"Session data cleared: {len(session_result.get('cleared_files', []))} items"
+                            }
+                        except Exception as e:
+                            ide_cleaning_results["session"] = {
+                                "success": False,
+                                "error": str(e),
+                                "message": "Failed to clear session data"
+                            }
+
                         # Workspace cleaning
                         try:
                             workspace_storage_path = ide.get("workspace_storage_path")
                             if not workspace_storage_path:
                                 workspace_storage_path = get_workspace_storage_path(editor_type)
-                            
+
                             if not os.path.exists(workspace_storage_path):
                                 raise ValueError(f"Workspace storage directory not found at {workspace_storage_path}")
-                            
+
+                            print(f"    - Cleaning workspace storage for {ide_name}...")
                             workspace_result = clean_workspace_storage(
                                 editor_type=editor_type,
                                 workspace_storage_path=workspace_storage_path
                             )
+
+                            # Enhanced success checking
+                            workspace_success = workspace_result.get('success', True)
+                            if not workspace_success and len(workspace_result.get('failed_operations', [])) > 0:
+                                workspace_success = False
+
                             ide_cleaning_results["workspace"] = {
-                                "success": True,
+                                "success": workspace_success,
                                 "data": workspace_result,
-                                "message": f"Workspace cleaned: {workspace_result.get('deleted_files_count', 0)} files deleted"
+                                "message": f"Workspace cleaned: {workspace_result.get('deleted_files_count', 0)} files deleted" if workspace_success else f"Workspace cleaning had issues: {len(workspace_result.get('failed_operations', []))} failed operations"
                             }
                         except Exception as e:
                             ide_cleaning_results["workspace"] = {
                                 "success": False,
                                 "error": str(e),
                                 "message": "Failed to clean workspace"
+                            }
+
+                        # GlobalStorage cleaning
+                        try:
+                            global_storage_path = ide.get("global_storage_path")
+                            if not global_storage_path:
+                                global_storage_path = get_global_storage_path(editor_type)
+
+                            if not os.path.exists(global_storage_path):
+                                raise ValueError(f"Global storage directory not found at {global_storage_path}")
+
+                            print(f"    - Cleaning global storage for {ide_name}...")
+                            global_result = clean_global_storage(
+                                editor_type=editor_type,
+                                global_storage_path=global_storage_path
+                            )
+
+                            # Enhanced success checking
+                            global_success = global_result.get('success', True)
+                            if not global_success and len(global_result.get('failed_operations', [])) > 0:
+                                global_success = False
+
+                            ide_cleaning_results["global_storage"] = {
+                                "success": global_success,
+                                "data": global_result,
+                                "message": f"Global storage cleaned: {global_result.get('deleted_files_count', 0)} files deleted" if global_success else f"Global storage cleaning had issues: {len(global_result.get('failed_operations', []))} failed operations"
+                            }
+                        except Exception as e:
+                            ide_cleaning_results["global_storage"] = {
+                                "success": False,
+                                "error": str(e),
+                                "message": "Failed to clean global storage"
                             }
                         
                         cleaning_results[ide_name] = ide_cleaning_results
@@ -372,7 +431,8 @@ def run_full_automation(ide_info: Optional[Dict[str, Any]] = None,
                     results["steps"]["cleaning"] = {
                         "telemetry": cleaning_result,
                         "database": {"success": True, "message": "Not applicable for JetBrains"},
-                        "workspace": {"success": True, "message": "Not applicable for JetBrains"}
+                        "workspace": {"success": True, "message": "Not applicable for JetBrains"},
+                        "global_storage": {"success": True, "message": "Not applicable for JetBrains"}
                     }
                 else:
                     # VSCode-based: full cleaning using system-detected paths
@@ -430,7 +490,7 @@ def run_full_automation(ide_info: Optional[Dict[str, Any]] = None,
                         workspace_storage_path = ide_info.get("workspace_storage_path")
                         if not workspace_storage_path:
                             raise ValueError("Workspace storage path not found in IDE information")
-                        
+
                         workspace_result = clean_workspace_storage(
                             editor_type=editor_type,
                             workspace_storage_path=workspace_storage_path
@@ -445,6 +505,28 @@ def run_full_automation(ide_info: Optional[Dict[str, Any]] = None,
                             "success": False,
                             "error": str(e),
                             "message": "Failed to clean workspace"
+                        }
+
+                    # GlobalStorage cleaning - use system-detected path
+                    try:
+                        global_storage_path = ide_info.get("global_storage_path")
+                        if not global_storage_path:
+                            raise ValueError("Global storage path not found in IDE information")
+
+                        global_result = clean_global_storage(
+                            editor_type=editor_type,
+                            global_storage_path=global_storage_path
+                        )
+                        cleaning_results["global_storage"] = {
+                            "success": True,
+                            "data": global_result,
+                            "message": f"Global storage cleaned: {global_result.get('deleted_files_count', 0)} files deleted"
+                        }
+                    except Exception as e:
+                        cleaning_results["global_storage"] = {
+                            "success": False,
+                            "error": str(e),
+                            "message": "Failed to clean global storage"
                         }
                     
                     results["steps"]["cleaning"] = cleaning_results
@@ -507,19 +589,60 @@ def run_full_automation(ide_info: Optional[Dict[str, Any]] = None,
                 if not restart_result["success"]:
                     results["errors"].append(f"Restart failed: {restart_result.get('error', 'Unknown error')}")
         
-        # Determine overall success
+        # Determine overall success and create detailed summary
+        print("\n" + "="*60)
+        print("🏁 AUTOMATION SUMMARY")
+        print("="*60)
+
         if results["errors"]:
             results["success"] = False
+            print(f"❌ Automation completed with {len(results['errors'])} error(s)")
+            print("\n🔍 ERROR DETAILS:")
+            for i, error in enumerate(results["errors"], 1):
+                print(f"   {i}. {error}")
+
             if clean_all_ides:
                 results["message"] = f"Automation completed with {len(results['errors'])} error(s) for all IDEs"
             else:
                 results["message"] = f"Automation completed with {len(results['errors'])} error(s)"
         else:
+            print("✅ All automation steps completed successfully!")
             if clean_all_ides:
                 results["message"] = f"Full automation completed successfully for all {len(detected_ides)} detected IDE(s)"
             else:
                 results["message"] = f"Full automation completed successfully for {ide_info.get('display_name', 'Unknown IDE')}"
-        
+
+        # Print step-by-step results
+        print(f"\n📊 STEP RESULTS:")
+        for step_name, step_result in results.get("steps", {}).items():
+            if step_name == "signout":
+                if isinstance(step_result, dict) and "closed_processes" in step_result:
+                    print(f"   🔄 Signout: Closed {step_result.get('closed_processes', 0)} processes")
+                else:
+                    print(f"   🔄 Signout: Multiple IDEs processed")
+            elif step_name == "cleaning":
+                if isinstance(step_result, dict):
+                    if clean_all_ides:
+                        successful_cleans = sum(1 for ide_result in step_result.values()
+                                              if isinstance(ide_result, dict) and
+                                              all(op.get('success', False) for op in ide_result.values() if isinstance(op, dict)))
+                        print(f"   🧹 Cleaning: {successful_cleans}/{len(step_result)} IDEs cleaned successfully")
+                    else:
+                        successful_ops = sum(1 for op in step_result.values() if isinstance(op, dict) and op.get('success', False))
+                        print(f"   🧹 Cleaning: {successful_ops}/{len(step_result)} operations successful")
+            elif step_name == "signin":
+                print(f"   🔑 Signin: Ready for new login")
+            elif step_name == "restart":
+                if isinstance(step_result, dict) and "success" in step_result:
+                    print(f"   🚀 Restart: {'Success' if step_result.get('success') else 'Failed'}")
+                else:
+                    print(f"   🚀 Restart: Multiple IDEs processed")
+
+        print("="*60)
+
+        # Generate comprehensive report
+        report_automation_summary(results)
+
         return results
         
     except Exception as e:

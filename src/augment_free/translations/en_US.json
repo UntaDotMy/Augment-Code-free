@@ -26,6 +26,7 @@
       "db_path": "Database Path",
       "machine_id_path": "Machine ID Path",
       "workspace_storage_path": "Workspace Storage Path",
+      "global_storage_path": "Global Storage Path",
       "jetbrains_config_path": "JetBrains Config Path",
       "permanent_device_id_path": "Permanent Device ID Path",
       "permanent_user_id_path": "Permanent User ID Path",
@@ -56,9 +57,28 @@
         "button": "Clean Database"
       },
       "workspace": {
-        "title": "Clean Workspace",
+        "title": "Clean Workspace Storage",
         "description": "Clean workspace storage files and directories",
-        "button": "Clean Workspace"
+        "button": "Clean Workspace Storage"
+      },
+      "global_storage": {
+        "title": "Clean Global Storage",
+        "description": "Clean global storage files and directories",
+        "button": "Clean Global Storage"
+      },
+      "storage_comprehensive": {
+        "title": "Clean All Storage",
+        "description": "Clean both global storage and workspace storage",
+        "button": "Clean All Storage",
+        "options": {
+          "title": "Storage Cleaning Options",
+          "global_storage": "Clean Global Storage",
+          "workspace_storage": "Clean Workspace Storage",
+          "global_desc": "Clean global storage directory (settings, extensions data)",
+          "workspace_desc": "Clean workspace storage directory (project-specific data)",
+          "cancel": "Cancel",
+          "start": "Start Cleaning"
+        }
       },
       "all": {
         "title": "One-Click Cleanup",
@@ -81,7 +101,7 @@
           "include_signin": "Include Signin Preparation",
           "include_restart": "Include IDE Restart",
           "signout_desc": "Close currently running IDE processes",
-          "cleaning_desc": "Clean telemetry data, database and workspace",
+          "cleaning_desc": "Clean telemetry data, database, workspace and global storage",
           "signin_desc": "Prepare IDE for new Augment login",
           "restart_desc": "Automatically restart the IDE",
           "cancel": "Cancel",
@@ -163,6 +183,7 @@
       "processing_telemetry": "Processing telemetry data...",
       "cleaning_databases": "Cleaning databases of each IDE...",
       "cleaning_workspaces": "Cleaning workspaces of each IDE...",
+      "cleaning_global_storage": "Cleaning global storage of each IDE...",
       "executing_operations": "Executing operations",
       "executing_all_operations": "Executing all operations...",
       "executing_automation": "Executing automation",
@@ -185,6 +206,10 @@
       "workspace_clean_complete": "Workspace cleaning operation completed",
       "workspace_clean_finished": "Workspace cleaning finished",
       "all_workspace_clean_complete": "All IDE workspace cleaning operations completed",
+      "global_storage_clean_success": "Global storage cleaned successfully",
+      "global_storage_clean_complete": "Global storage cleaning operation completed",
+      "global_storage_clean_finished": "Global storage cleaning finished",
+      "all_global_storage_clean_complete": "All IDE global storage cleaning operations completed",
       "all_operations_success": "All operations successful",
       "partial_operations_success": "{success}/{total} operations successful",
       "all_operations_failed": "All operations failed",
@@ -213,7 +238,12 @@
       "status": {
         "yes": "Yes",
         "no": "No",
-        "updated": "Updated"
+        "updated": "Updated",
+        "pending": "Pending",
+        "processing": "Processing",
+        "completed": "Completed",
+        "error": "Error",
+        "success": "Success"
       },
       "partial_failed": "Partially Failed",
       "title": "Processing...",
@@ -259,7 +289,9 @@
     "success": {
       "telemetry_modified": "Telemetry IDs modified successfully",
       "database_cleaned": "Database cleaned successfully. Deleted {count} rows.",
-      "workspace_cleaned": "Workspace cleaned successfully. Deleted {count} files.",
+      "workspace_cleaned": "Workspace storage cleaned successfully. Deleted {count} files.",
+      "global_storage_cleaned": "Global storage cleaned successfully. Deleted {count} files.",
+      "storage_comprehensive_cleaned": "All storage cleaned successfully. Deleted {count} files.",
       "all_operations_completed": "All operations completed",
       "jetbrains_ids_modified": "JetBrains ID processing completed",
       "language_changed": "Language switched to English",
@@ -272,7 +304,9 @@
     "error": {
       "telemetry_failed": "Failed to modify telemetry IDs",
       "database_failed": "Failed to clean database",
-      "workspace_failed": "Failed to clean workspace",
+      "workspace_failed": "Failed to clean workspace storage",
+      "global_storage_failed": "Failed to clean global storage",
+      "storage_comprehensive_failed": "Failed to clean storage",
       "some_operations_failed": "Some operations failed",
       "automation_failed": "Automation workflow failed",
       "ide_not_found": "Specified IDE not found",

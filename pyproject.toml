@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "augment-free"
-version = "0.2.0"
+version = "1.2.3"
 description = "Free AugmentCode - A tool for cleaning AugmentCode related data with modern GUI (Modified by UntaDotMy)"
 readme = "README.md"
 license = {text = "MIT"}

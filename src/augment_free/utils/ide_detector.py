@@ -29,6 +29,7 @@ class IDEInfo:
         self.db_path = None
         self.machine_id_path = None
         self.workspace_storage_path = None
+        self.global_storage_path = None
         self.permanent_device_id_path = None
         self.permanent_user_id_path = None
 
@@ -46,6 +47,7 @@ class IDEInfo:
             "db_path": self.db_path,
             "machine_id_path": self.machine_id_path,
             "workspace_storage_path": self.workspace_storage_path,
+            "global_storage_path": self.global_storage_path,
             "permanent_device_id_path": self.permanent_device_id_path,
             "permanent_user_id_path": self.permanent_user_id_path
         }
@@ -81,6 +83,9 @@ class IDEDetector:
                 # Look for globalStorage directory
                 global_storage = user_dir / "globalStorage"
                 if global_storage.exists():
+                    # Set the globalStorage directory path
+                    ide_info.global_storage_path = str(global_storage)
+
                     # Check for storage.json
                     storage_file = global_storage / "storage.json"
                     if storage_file.exists():

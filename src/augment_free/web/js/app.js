@@ -811,6 +811,11 @@ function displaySystemInfo(data) {
                 label: t('ui.system.workspace_storage_path'),
                 value: data.workspace_storage_path,
                 icon: '📁'
+            },
+            {
+                label: t('ui.system.global_storage_path'),
+                value: data.global_storage_path,
+                icon: '🌐'
             }
         );
     }
@@ -888,6 +893,12 @@ function displayDetectedIDEs(ides) {
                 label: t('ui.system.workspace_storage_path'),
                 value: ide.workspace_storage_path || t('ui.system.not_found'),
                 icon: '📁'
+            },
+            {
+                key: 'global_storage_path',
+                label: t('ui.system.global_storage_path'),
+                value: ide.global_storage_path || t('ui.system.not_found'),
+                icon: '🌐'
             }
         ];
 
@@ -1399,6 +1410,212 @@ async function cleanWorkspace() {
     }
 }
 
+// Clean global storage
+async function cleanGlobalStorage() {
+    if (isOperationRunning || !checkAPIAvailable()) return;
+
+    showProgress(t('ui.operations.global_storage.title'), 3, true);
+    updateCurrentOperation(t('ui.progress.detecting_ides'), t('ui.progress.detecting_ides_desc'), '🔍');
+
+    try {
+        // Step 1: Detect IDEs
+        updateOverallProgress(10);
+        const detectionResult = await pywebview.api.detect_ides();
+
+        if (!detectionResult.success || !detectionResult.ides || detectionResult.ides.length === 0) {
+            throw new Error(detectionResult.message || t('ui.progress.no_ides_detected'));
+        }
+
+        const detectedIDEs = detectionResult.ides.filter(ide => ide.type === 'vscode');
+        if (detectedIDEs.length === 0) {
+            throw new Error('No VSCode-based IDEs detected for global storage cleaning');
+        }
+
+        // Step 2: Add IDE progress items
+        detectedIDEs.forEach(ide => {
+            addIDEProgress(ide.display_name, ide.type);
+        });
+        updateOverallProgress(40);
+
+        // Step 3: Process each IDE
+        updateCurrentOperation(t('ui.progress.processing_ides'), 'Cleaning global storage...', '🗂️');
+
+        for (let i = 0; i < detectedIDEs.length; i++) {
+            const ide = detectedIDEs[i];
+            const progress = 40 + (i / detectedIDEs.length) * 50;
+
+            updateIDEProgress(ide.display_name, 'processing', 'Cleaning global storage...');
+            updateOverallProgress(progress);
+
+            try {
+                const result = await pywebview.api.clean_global_storage();
+
+                if (result.success && result.data && result.data.results) {
+                    const ideResult = result.data.results[ide.display_name];
+                    if (ideResult && ideResult.success) {
+                        const stats = {
+                            'files_deleted': ideResult.data?.deleted_files_count || 0,
+                            'backups_created': ideResult.data?.backup_path ? 1 : 0
+                        };
+
+                        progressManager.statistics.totalFilesDeleted += stats.files_deleted;
+                        progressManager.statistics.totalBackupsCreated += stats.backups_created;
+
+                        updateIDEProgress(ide.display_name, 'completed', 'Global storage cleaned successfully', stats);
+                    } else {
+                        updateIDEProgress(ide.display_name, 'error', ideResult?.message || 'Cleaning failed');
+                    }
+                } else {
+                    updateIDEProgress(ide.display_name, 'error', result.message || t('ui.progress.operation_failed'));
+                }
+            } catch (error) {
+                updateIDEProgress(ide.display_name, 'error', error.message);
+            }
+        }
+
+        updateOverallProgress(90);
+        updateCurrentOperation(t('ui.progress.completed'), 'Global storage cleaning completed', '✅');
+        addLogEntry('All global storage cleaning operations completed', 'success');
+
+        setTimeout(() => {
+            hideProgress();
+            showMessage('Global storage cleaning finished', 'success');
+        }, 2000);
+
+    } catch (error) {
+        addLogEntry(t('ui.progress.operation_error') + ': ' + error.message, 'error');
+        updateCurrentOperation(t('ui.progress.failed'), t('ui.progress.operation_error_occurred'), '❌');
+        setTimeout(() => {
+            hideProgress();
+            showMessage(t('ui.operations.global_storage.title') + ' ' + t('ui.progress.failed') + ': ' + error.message, 'error');
+        }, 2000);
+    }
+}
+
+// Show storage options modal
+function showStorageOptionsModal() {
+    const modal = document.getElementById('storageOptionsModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
+    }
+}
+
+// Hide storage options modal
+function hideStorageOptionsModal() {
+    const modal = document.getElementById('storageOptionsModal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+}
+
+// Run comprehensive storage cleaning with options
+async function runStorageComprehensive() {
+    if (isOperationRunning || !checkAPIAvailable()) return;
+
+    // Get options from checkboxes
+    const cleanGlobal = document.getElementById('includeGlobalStorage').checked;
+    const cleanWorkspace = document.getElementById('includeWorkspaceStorage').checked;
+
+    if (!cleanGlobal && !cleanWorkspace) {
+        showMessage('Please select at least one storage type to clean', 'error');
+        return;
+    }
+
+    // Hide the modal
+    hideStorageOptionsModal();
+
+    const operationTitle = cleanGlobal && cleanWorkspace ?
+        t('ui.operations.storage_comprehensive.title') :
+        cleanGlobal ? t('ui.operations.global_storage.title') : t('ui.operations.workspace.title');
+
+    showProgress(operationTitle, 3, true);
+    updateCurrentOperation(t('ui.progress.detecting_ides'), t('ui.progress.detecting_ides_desc'), '🔍');
+
+    try {
+        // Step 1: Detect IDEs
+        updateOverallProgress(10);
+        const detectionResult = await pywebview.api.detect_ides();
+
+        if (!detectionResult.success || !detectionResult.ides || detectionResult.ides.length === 0) {
+            throw new Error(detectionResult.message || t('ui.progress.no_ides_detected'));
+        }
+
+        const detectedIDEs = detectionResult.ides.filter(ide => ide.type === 'vscode');
+        if (detectedIDEs.length === 0) {
+            throw new Error('No VSCode-based IDEs detected for storage cleaning');
+        }
+
+        // Step 2: Add IDE progress items
+        detectedIDEs.forEach(ide => {
+            addIDEProgress(ide.display_name, ide.type);
+        });
+        updateOverallProgress(40);
+
+        // Step 3: Process each IDE
+        const operationDesc = cleanGlobal && cleanWorkspace ?
+            'Cleaning all storage...' :
+            cleanGlobal ? 'Cleaning global storage...' : 'Cleaning workspace storage...';
+
+        updateCurrentOperation(t('ui.progress.processing_ides'), operationDesc, '🧹');
+
+        for (let i = 0; i < detectedIDEs.length; i++) {
+            const ide = detectedIDEs[i];
+            const progress = 40 + (i / detectedIDEs.length) * 50;
+
+            updateIDEProgress(ide.display_name, 'processing', operationDesc);
+            updateOverallProgress(progress);
+
+            try {
+                const result = await pywebview.api.clean_storage_comprehensive(cleanGlobal, cleanWorkspace);
+
+                if (result.success && result.data && result.data.results) {
+                    const ideResult = result.data.results[ide.display_name];
+                    if (ideResult && ideResult.success) {
+                        const stats = {
+                            'files_deleted': ideResult.data?.total_files_deleted || 0,
+                            'backups_created': ideResult.data?.backup_paths?.length || 0
+                        };
+
+                        progressManager.statistics.totalFilesDeleted += stats.files_deleted;
+                        progressManager.statistics.totalBackupsCreated += stats.backups_created;
+
+                        updateIDEProgress(ide.display_name, 'completed', 'Storage cleaned successfully', stats);
+                    } else {
+                        updateIDEProgress(ide.display_name, 'error', ideResult?.message || 'Cleaning failed');
+                    }
+                } else {
+                    updateIDEProgress(ide.display_name, 'error', result.message || t('ui.progress.operation_failed'));
+                }
+            } catch (error) {
+                updateIDEProgress(ide.display_name, 'error', error.message);
+            }
+        }
+
+        updateOverallProgress(90);
+        updateCurrentOperation(t('ui.progress.completed'), 'Storage cleaning completed', '✅');
+        addLogEntry('All storage cleaning operations completed', 'success');
+
+        setTimeout(() => {
+            hideProgress();
+            showMessage('Storage cleaning finished', 'success');
+        }, 2000);
+
+    } catch (error) {
+        addLogEntry(t('ui.progress.operation_error') + ': ' + error.message, 'error');
+        updateCurrentOperation(t('ui.progress.failed'), t('ui.progress.operation_error_occurred'), '❌');
+        setTimeout(() => {
+            hideProgress();
+            showMessage(operationTitle + ' ' + t('ui.progress.failed') + ': ' + error.message, 'error');
+        }, 2000);
+    }
+}
+
 // Run all operations with progress
 async function runAllOperations() {
     if (isOperationRunning || !checkAPIAvailable()) return;
@@ -1900,6 +2117,13 @@ function displayAutomationResults(result) {
             </p>`;
         }
 
+        if (cleaning.global_storage) {
+            const gs = cleaning.global_storage;
+            content += `<p class="${gs.success ? 'success' : 'error'}">
+                ${gs.success ? '✅' : '❌'} ${t('ui.operations.global_storage.title')}: ${gs.message}
+            </p>`;
+        }
+
         content += `
                 </div>
             </div>
@@ -2000,7 +2224,8 @@ function displayAllResults(result) {
         const operations = [
             { key: 'telemetry', name: t('ui.operations.telemetry.title') },
             { key: 'database', name: t('ui.operations.database.title') },
-            { key: 'workspace', name: t('ui.operations.workspace.title') }
+            { key: 'workspace', name: t('ui.operations.workspace.title') },
+            { key: 'global_storage', name: t('ui.operations.global_storage.title') }
         ];
 
         operations.forEach(op => {

@@ -26,6 +26,7 @@
       "db_path": "数据库路径",
       "machine_id_path": "机器ID路径",
       "workspace_storage_path": "工作区存储路径",
+      "global_storage_path": "全局存储路径",
       "jetbrains_config_path": "JetBrains配置路径",
       "permanent_device_id_path": "永久设备ID路径",
       "permanent_user_id_path": "永久用户ID路径",
@@ -56,9 +57,28 @@
         "button": "清理数据库"
       },
       "workspace": {
-        "title": "清理工作区",
+        "title": "清理工作区存储",
         "description": "清理工作区存储文件和目录",
-        "button": "清理工作区"
+        "button": "清理工作区存储"
+      },
+      "global_storage": {
+        "title": "清理全局存储",
+        "description": "清理全局存储文件和目录",
+        "button": "清理全局存储"
+      },
+      "storage_comprehensive": {
+        "title": "清理所有存储",
+        "description": "清理全局存储和工作区存储",
+        "button": "清理所有存储",
+        "options": {
+          "title": "存储清理选项",
+          "global_storage": "清理全局存储",
+          "workspace_storage": "清理工作区存储",
+          "global_desc": "清理全局存储目录（设置、扩展数据）",
+          "workspace_desc": "清理工作区存储目录（项目特定数据）",
+          "cancel": "取消",
+          "start": "开始清理"
+        }
       },
       "all": {
         "title": "一键清理",
@@ -81,7 +101,7 @@
           "include_signin": "包含登录准备",
           "include_restart": "包含IDE重启",
           "signout_desc": "关闭当前运行的IDE进程",
-          "cleaning_desc": "清理遥测数据、数据库和工作区",
+          "cleaning_desc": "清理遥测数据、数据库、工作区和全局存储",
           "signin_desc": "准备IDE以供新的Augment登录",
           "restart_desc": "自动重新启动IDE",
           "cancel": "取消",
@@ -163,6 +183,7 @@
       "processing_telemetry": "正在处理遥测数据...",
       "cleaning_databases": "正在清理各个IDE的数据库...",
       "cleaning_workspaces": "正在清理各个IDE的工作区...",
+      "cleaning_global_storage": "正在清理各个IDE的全局存储...",
       "executing_operations": "执行操作",
       "executing_all_operations": "正在执行全部操作...",
       "executing_automation": "执行自动化",
@@ -185,6 +206,10 @@
       "workspace_clean_complete": "工作区清理操作已完成",
       "workspace_clean_finished": "工作区清理完成",
       "all_workspace_clean_complete": "所有IDE的工作区清理操作已完成",
+      "global_storage_clean_success": "全局存储清理成功",
+      "global_storage_clean_complete": "全局存储清理操作完成",
+      "global_storage_clean_finished": "全局存储清理完成",
+      "all_global_storage_clean_complete": "所有IDE的全局存储清理操作已完成",
       "all_operations_success": "全部操作成功",
       "partial_operations_success": "{success}/{total} 个操作成功",
       "all_operations_failed": "所有操作都失败了",
@@ -213,7 +238,12 @@
       "status": {
         "yes": "是",
         "no": "否",
-        "updated": "已更新"
+        "updated": "已更新",
+        "pending": "等待中",
+        "processing": "处理中",
+        "completed": "已完成",
+        "error": "错误",
+        "success": "成功"
       },
       "partial_failed": "部分失败",
       "title": "正在处理...",
@@ -259,7 +289,9 @@
     "success": {
       "telemetry_modified": "遥测ID修改成功",
       "database_cleaned": "数据库清理成功。删除了 {count} 行记录。",
-      "workspace_cleaned": "工作区清理成功。删除了 {count} 个文件。",
+      "workspace_cleaned": "工作区存储清理成功。删除了 {count} 个文件。",
+      "global_storage_cleaned": "全局存储清理成功。删除了 {count} 个文件。",
+      "storage_comprehensive_cleaned": "所有存储清理成功。删除了 {count} 个文件。",
       "all_operations_completed": "所有操作已完成",
       "jetbrains_ids_modified": "JetBrains ID处理完成",
       "language_changed": "语言已切换为中文",
@@ -272,7 +304,9 @@
     "error": {
       "telemetry_failed": "遥测ID修改失败",
       "database_failed": "数据库清理失败",
-      "workspace_failed": "工作区清理失败",
+      "workspace_failed": "工作区存储清理失败",
+      "global_storage_failed": "全局存储清理失败",
+      "storage_comprehensive_failed": "存储清理失败",
       "some_operations_failed": "部分操作失败",
       "automation_failed": "自动化流程失败",
       "ide_not_found": "未找到指定的IDE",

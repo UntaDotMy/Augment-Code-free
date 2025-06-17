@@ -106,15 +106,27 @@ def main():
             sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
             sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
 
-        print("Starting AugmentCode Free...")
-        print(f"Python version: {sys.version}")
-        print(f"Platform: {sys.platform}")
+        print("🚀 Starting AugmentCode Free...")
+        print("="*50)
+        print(f"🐍 Python version: {sys.version}")
+        print(f"💻 Platform: {sys.platform}")
+
+        # Check admin privileges
+        try:
+            import ctypes
+            is_admin = bool(ctypes.windll.shell32.IsUserAnAdmin())
+            print(f"🔐 Administrator: {'✅ Yes' if is_admin else '❌ No'}")
+        except Exception:
+            print(f"🔐 Administrator: ❓ Unknown")
 
         # Check if running as PyInstaller bundle
         if getattr(sys, "frozen", False):
-            print(f"Running as PyInstaller bundle from: {sys._MEIPASS}")
+            print(f"📦 Mode: PyInstaller bundle")
+            print(f"📁 Bundle path: {sys._MEIPASS}")
         else:
-            print("Running in development mode")
+            print("📦 Mode: Development")
+
+        print("="*50)
 
         # Create API instance
         print("Initializing API...")

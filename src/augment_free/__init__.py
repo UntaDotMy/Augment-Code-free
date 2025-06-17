@@ -5,7 +5,7 @@ This package provides a modern pywebview-based GUI for cleaning AugmentCode
 telemetry data, database records, and workspace storage.
 """
 
-__version__ = "0.1.1"
+__version__ = "1.2.3"
 __author__ = "vagmr"
 
 from .main import main

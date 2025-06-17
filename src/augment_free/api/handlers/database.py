@@ -56,21 +56,55 @@ def clean_augment_data(editor_type: str = "VSCodium", db_path: str = None) -> di
     db_backup_path = _create_backup(db_path)
 
     # Connect to the database
+    print(f"🔄 Connecting to database: {db_path}")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     try:
+        # First, check what records exist
+        print(f"🔍 Scanning for Augment-related records...")
+        cursor.execute("SELECT key FROM ItemTable WHERE key LIKE '%augment%'")
+        records_to_delete = cursor.fetchall()
+
+        if records_to_delete:
+            print(f"📋 Found {len(records_to_delete)} Augment-related records:")
+            for i, (key,) in enumerate(records_to_delete[:10]):  # Show first 10
+                print(f"   {i+1}. {key}")
+            if len(records_to_delete) > 10:
+                print(f"   ... and {len(records_to_delete) - 10} more records")
+        else:
+            print("✅ No Augment-related records found in database")
+
         # Execute the delete query
+        print(f"🗑️  Deleting Augment-related records...")
         cursor.execute("DELETE FROM ItemTable WHERE key LIKE '%augment%'")
         deleted_rows = cursor.rowcount
 
         # Commit the changes
         conn.commit()
 
+        if deleted_rows > 0:
+            print(f"✅ Successfully deleted {deleted_rows} records from database")
+        else:
+            print("ℹ️  No records were deleted (none found)")
+
+        # Get database statistics
+        cursor.execute("SELECT COUNT(*) FROM ItemTable")
+        total_remaining = cursor.fetchone()[0]
+
+        operation_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+
         return {
             'db_backup_path': db_backup_path,
             'deleted_rows': deleted_rows,
-            'editor_type': editor_type
+            'editor_type': editor_type,
+            'operation_timestamp': int(time.time()),
+            'operation_time': operation_time,
+            'database_path': db_path,
+            'total_remaining_records': total_remaining,
+            'deleted_record_keys': [key for (key,) in records_to_delete],
+            'backup_created': db_backup_path,
+            'database_size_bytes': os.path.getsize(db_path) if os.path.exists(db_path) else 0
         }
     finally:
         # Always close the connection

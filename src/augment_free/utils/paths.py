@@ -142,3 +142,30 @@ def get_workspace_storage_path(editor_type: str = "VSCodium") -> str:
     else:
         # Linux and other Unix-like systems
         return os.path.join(str(Path.home()), ".config", editor_type, "User", "workspaceStorage")
+
+
+def get_global_storage_path(editor_type: str = "VSCodium") -> str:
+    """
+    Get the globalStorage directory path across different platforms.
+
+    Args:
+        editor_type (str): Editor type, either "VSCodium" or "Code" (VS Code)
+
+    Returns:
+        str: Path to the globalStorage directory
+
+    Platform specific paths:
+        - Windows: %APPDATA%/{editor_type}/User/globalStorage
+        - macOS: ~/Library/Application Support/{editor_type}/User/globalStorage
+        - Linux: ~/.config/{editor_type}/User/globalStorage
+    """
+    if sys.platform == "win32":
+        # Windows
+        base_path = os.getenv("APPDATA", "")
+        return os.path.join(base_path, editor_type, "User", "globalStorage")
+    elif sys.platform == "darwin":
+        # macOS
+        return os.path.join(str(Path.home()), "Library", "Application Support", editor_type, "User", "globalStorage")
+    else:
+        # Linux and other Unix-like systems
+        return os.path.join(str(Path.home()), ".config", editor_type, "User", "globalStorage")

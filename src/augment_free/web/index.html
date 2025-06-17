@@ -94,13 +94,35 @@
                                     </div>
 
                                     <div class="operation-item-compact">
+                                        <div class="operation-icon">🗂️</div>
+                                        <div class="operation-content">
+                                            <h3 data-i18n="ui.operations.global_storage.title">清理全局存储</h3>
+                                            <p data-i18n="ui.operations.global_storage.description">清理全局存储文件和目录</p>
+                                        </div>
+                                        <button class="operation-btn btn-primary" onclick="cleanGlobalStorage()" id="globalStorageBtn" data-i18n="ui.operations.global_storage.button">
+                                            清理全局存储
+                                        </button>
+                                    </div>
+
+                                    <div class="operation-item-compact">
                                         <div class="operation-icon">💾</div>
                                         <div class="operation-content">
-                                            <h3 data-i18n="ui.operations.workspace.title">清理工作区</h3>
+                                            <h3 data-i18n="ui.operations.workspace.title">清理工作区存储</h3>
                                             <p data-i18n="ui.operations.workspace.description">清理工作区存储文件和目录</p>
                                         </div>
                                         <button class="operation-btn btn-primary" onclick="cleanWorkspace()" id="workspaceBtn" data-i18n="ui.operations.workspace.button">
-                                            清理工作区
+                                            清理工作区存储
+                                        </button>
+                                    </div>
+
+                                    <div class="operation-item-compact">
+                                        <div class="operation-icon">🧹</div>
+                                        <div class="operation-content">
+                                            <h3 data-i18n="ui.operations.storage_comprehensive.title">清理所有存储</h3>
+                                            <p data-i18n="ui.operations.storage_comprehensive.description">清理全局存储和工作区存储</p>
+                                        </div>
+                                        <button class="operation-btn btn-primary" onclick="showStorageOptionsModal()" id="storageComprehensiveBtn" data-i18n="ui.operations.storage_comprehensive.button">
+                                            清理所有存储
                                         </button>
                                     </div>
                                 </div>
@@ -281,6 +303,41 @@
                     <button class="btn-secondary" onclick="hideAutomationOptionsModal()" data-i18n="ui.operations.automation.options.cancel">取消</button>
                     <button class="btn-primary" onclick="runCustomAutomation()" data-i18n="ui.operations.automation.options.start">开始自动化</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Storage Options Modal -->
+    <div class="modal-overlay" id="storageOptionsModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="ui.operations.storage_comprehensive.options.title">存储清理选项</h3>
+                <button class="modal-close" onclick="hideStorageOptionsModal()">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="option-group">
+                    <label class="option-item">
+                        <input type="checkbox" id="includeGlobalStorage" checked>
+                        <span class="checkmark"></span>
+                        <span data-i18n="ui.operations.storage_comprehensive.options.global_storage">清理全局存储</span>
+                    </label>
+                    <p class="option-description" data-i18n="ui.operations.storage_comprehensive.options.global_desc">清理全局存储目录（设置、扩展数据）</p>
+                </div>
+
+                <div class="option-group">
+                    <label class="option-item">
+                        <input type="checkbox" id="includeWorkspaceStorage" checked>
+                        <span class="checkmark"></span>
+                        <span data-i18n="ui.operations.storage_comprehensive.options.workspace_storage">清理工作区存储</span>
+                    </label>
+                    <p class="option-description" data-i18n="ui.operations.storage_comprehensive.options.workspace_desc">清理工作区存储目录（项目特定数据）</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="hideStorageOptionsModal()" data-i18n="ui.operations.storage_comprehensive.options.cancel">取消</button>
+                <button class="btn-primary" onclick="runStorageComprehensive()" data-i18n="ui.operations.storage_comprehensive.options.start">开始清理</button>
             </div>
         </div>
     </div>

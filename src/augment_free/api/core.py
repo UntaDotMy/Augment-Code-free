@@ -6,6 +6,7 @@ This module provides the main API interface between the frontend and backend.
 
 import json
 import os
+import time
 import traceback
 import webbrowser
 from pathlib import Path
@@ -15,6 +16,8 @@ from .handlers import (
     modify_telemetry_ids,
     clean_augment_data,
     clean_workspace_storage,
+    clean_global_storage,
+    clean_storage_comprehensive,
     modify_jetbrains_ids,
     get_jetbrains_config_dir,
     get_jetbrains_info,
@@ -22,6 +25,7 @@ from .handlers import (
     close_ide_processes,
     start_ide,
 )
+from ..utils.session_manager import get_session_status, clear_session_data
 from ..utils.paths import (
     get_home_dir,
     get_app_data_dir,
@@ -29,6 +33,7 @@ from ..utils.paths import (
     get_db_path,
     get_machine_id_path,
     get_workspace_storage_path,
+    get_global_storage_path,
 )
 from ..utils.ide_detector import detect_ides, IDEDetector
 from ..utils.translation import get_translation_manager, t
@@ -118,6 +123,7 @@ class AugmentFreeAPI:
                     "db_path": get_db_path(self.editor_type),
                     "machine_id_path": get_machine_id_path(self.editor_type),
                     "workspace_storage_path": get_workspace_storage_path(self.editor_type),
+                    "global_storage_path": get_global_storage_path(self.editor_type),
                 })
 
             return {
@@ -215,15 +221,23 @@ class AugmentFreeAPI:
                         if not machine_id_path:
                             machine_id_path = get_machine_id_path(editor_type)
 
+                        print(f"🔧 Modifying telemetry IDs for {ide_name}...")
                         result = modify_telemetry_ids(
                             editor_type=editor_type,
                             storage_path=storage_path,
                             machine_id_path=machine_id_path
                         )
+
+                        # Enhanced success message with details
+                        success_msg = f"Telemetry IDs modified successfully for {ide_name}"
+                        if result.get('id_details'):
+                            success_msg += f"\n   • Machine ID: {result['id_details']['machine_id']['new'][:8]}...{result['id_details']['machine_id']['new'][-8:]}"
+                            success_msg += f"\n   • Device ID: {result['id_details']['device_id']['new'][:8]}...{result['id_details']['device_id']['new'][-8:]}"
+
                         results["results"][ide_name] = {
                             "success": True,
                             "data": result,
-                            "message": "Telemetry IDs modified successfully"
+                            "message": success_msg
                         }
 
                 except Exception as e:
@@ -320,14 +334,26 @@ class AugmentFreeAPI:
                             results["errors"].append(f"{ide_name}: Database file not found at {db_path}")
                             continue
 
+                    print(f"🗃️  Cleaning database for {ide_name}...")
                     result = clean_augment_data(
                         editor_type=editor_type,
                         db_path=db_path
                     )
+
+                    # Enhanced success message with details
+                    success_msg = f"Database cleaned successfully for {ide_name}"
+                    success_msg += f"\n   • Deleted {result['deleted_rows']} Augment-related records"
+                    success_msg += f"\n   • {result.get('total_remaining_records', 0)} total records remaining"
+                    success_msg += f"\n   • Database size: {result.get('database_size_bytes', 0)} bytes"
+                    if result.get('deleted_record_keys'):
+                        success_msg += f"\n   • Sample deleted keys: {', '.join(result['deleted_record_keys'][:3])}"
+                        if len(result['deleted_record_keys']) > 3:
+                            success_msg += f" (and {len(result['deleted_record_keys']) - 3} more)"
+
                     results["results"][ide_name] = {
                         "success": True,
                         "data": result,
-                        "message": f"Database cleaned successfully. Deleted {result['deleted_rows']} rows."
+                        "message": success_msg
                     }
 
                 except Exception as e:
@@ -353,6 +379,30 @@ class AugmentFreeAPI:
                 "message": "Failed to clean database"
             }
 
+    def check_admin_privileges(self) -> Dict[str, Any]:
+        """
+        Check if the application is running with administrator privileges.
+
+        Returns:
+            dict: Admin status information
+        """
+        try:
+            import ctypes
+            is_admin = bool(ctypes.windll.shell32.IsUserAnAdmin())
+
+            return {
+                "success": True,
+                "is_admin": is_admin,
+                "message": "Administrator privileges detected" if is_admin else "Not running as administrator"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "is_admin": False,
+                "message": "Could not check administrator privileges"
+            }
+
     def clean_workspace(self) -> Dict[str, Any]:
         """
         Clean workspace storage for all detected VSCode-based IDEs.
@@ -361,6 +411,11 @@ class AugmentFreeAPI:
             dict: Operation result with backup information and deletion count for all IDEs
         """
         try:
+            # Check admin privileges first
+            admin_check = self.check_admin_privileges()
+            if not admin_check.get("is_admin", False):
+                print("⚠️ Warning: Not running as administrator. Some files may not be deletable.")
+
             # Ensure system information is available
             if not self.ensure_system_info_available():
                 return {
@@ -424,14 +479,28 @@ class AugmentFreeAPI:
                             results["errors"].append(f"{ide_name}: Workspace storage directory not found at {workspace_storage_path}")
                             continue
 
+                    print(f"💾 Cleaning workspace storage for {ide_name}...")
                     result = clean_workspace_storage(
                         editor_type=editor_type,
                         workspace_storage_path=workspace_storage_path
                     )
+
+                    # Enhanced success message with details
+                    success_msg = f"Workspace cleaned for {ide_name}"
+                    success_msg += f"\n   • Files processed: {result.get('deleted_files_count', 0)}"
+                    success_msg += f"\n   • Deletion method: {result.get('deletion_method', 'unknown')}"
+                    success_msg += f"\n   • Workspace still exists: {'Yes' if result.get('workspace_still_exists') else 'No'}"
+                    if result.get('failed_operations'):
+                        success_msg += f"\n   • Failed operations: {len(result['failed_operations'])}"
+                    if result.get('backup_path'):
+                        success_msg += f"\n   • Backup created: {result['backup_path']}"
+
+                    workspace_success = result.get('success', True) and not result.get('workspace_still_exists', True)
+
                     results["results"][ide_name] = {
-                        "success": True,
+                        "success": workspace_success,
                         "data": result,
-                        "message": f"Workspace cleaned successfully. Deleted {result['deleted_files_count']} files."
+                        "message": success_msg
                     }
 
                 except Exception as e:
@@ -455,6 +524,214 @@ class AugmentFreeAPI:
                 "error": str(e),
                 "traceback": traceback.format_exc(),
                 "message": "Failed to clean workspace"
+            }
+
+    def clean_global_storage(self) -> Dict[str, Any]:
+        """
+        Clean globalStorage directory for all detected VSCode-based IDEs.
+
+        Returns:
+            dict: Operation results for all IDEs
+        """
+        try:
+            # Ensure system information is available
+            if not self.ensure_system_info_available():
+                return {
+                    "success": False,
+                    "error": "System information not available",
+                    "message": "Unable to detect IDE configuration. Please ensure the IDE is properly installed."
+                }
+
+            results = {
+                "overall_success": True,
+                "errors": [],
+                "processed_ides": [],
+                "results": {}
+            }
+
+            # Get detected IDEs
+            detection_result = self.detect_ides()
+            if not detection_result["success"] or not detection_result.get("ides"):
+                return {
+                    "success": False,
+                    "error": "No IDEs detected",
+                    "message": "No IDEs found for globalStorage cleaning"
+                }
+
+            vscode_ides = [ide for ide in detection_result["ides"] if ide.get("type") == "vscode"]
+            if not vscode_ides:
+                return {
+                    "success": False,
+                    "error": "No VSCode-based IDEs detected",
+                    "message": "GlobalStorage cleaning is only applicable to VSCode-based IDEs"
+                }
+
+            # Process each VSCode-based IDE
+            for ide in vscode_ides:
+                ide_name = ide.get("display_name", "Unknown IDE")
+                editor_type = ide.get("editor_type", "VSCodium")
+                global_storage_path = ide.get("global_storage_path")
+
+                results["processed_ides"].append(ide_name)
+
+                try:
+                    # If no verified path, try to detect it
+                    if not global_storage_path:
+                        global_storage_path = get_global_storage_path(editor_type)
+
+                        # Check if the path actually exists
+                        if not os.path.exists(global_storage_path):
+                            results["errors"].append(f"{ide_name}: GlobalStorage directory not found at {global_storage_path}")
+                            continue
+
+                    print(f"🗂️ Cleaning globalStorage for {ide_name}...")
+                    result = clean_global_storage(
+                        editor_type=editor_type,
+                        global_storage_path=global_storage_path
+                    )
+
+                    # Determine success
+                    global_success = result.get('success', True)
+                    if not global_success and len(result.get('failed_operations', [])) > 0:
+                        global_success = False
+
+                    success_msg = f"GlobalStorage cleaned: {result.get('deleted_files_count', 0)} files deleted"
+                    if result.get('backup_path'):
+                        success_msg += f", backup created at {result['backup_path']}"
+
+                    results["results"][ide_name] = {
+                        "success": global_success,
+                        "data": result,
+                        "message": success_msg
+                    }
+
+                except Exception as e:
+                    results["errors"].append(f"{ide_name}: {str(e)}")
+                    results["overall_success"] = False
+                    results["results"][ide_name] = {
+                        "success": False,
+                        "error": str(e),
+                        "message": "Failed to clean globalStorage"
+                    }
+
+            return {
+                "success": results["overall_success"],
+                "data": results,
+                "message": f"GlobalStorage cleaning completed for {len(results['processed_ides'])} IDE(s)" if results["overall_success"] else f"GlobalStorage cleaning completed with {len(results['errors'])} error(s)"
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+                "message": "Failed to clean globalStorage"
+            }
+
+    def clean_storage_comprehensive(self, clean_global: bool = True, clean_workspace: bool = True) -> Dict[str, Any]:
+        """
+        Comprehensive storage cleaning for all detected VSCode-based IDEs.
+        Can clean globalStorage, workspaceStorage, or both.
+
+        Args:
+            clean_global (bool): Whether to clean globalStorage directories
+            clean_workspace (bool): Whether to clean workspaceStorage directories
+
+        Returns:
+            dict: Operation results for all IDEs
+        """
+        try:
+            # Ensure system information is available
+            if not self.ensure_system_info_available():
+                return {
+                    "success": False,
+                    "error": "System information not available",
+                    "message": "Unable to detect IDE configuration. Please ensure the IDE is properly installed."
+                }
+
+            results = {
+                "overall_success": True,
+                "errors": [],
+                "processed_ides": [],
+                "results": {}
+            }
+
+            # Get detected IDEs
+            detection_result = self.detect_ides()
+            if not detection_result["success"] or not detection_result.get("ides"):
+                return {
+                    "success": False,
+                    "error": "No IDEs detected",
+                    "message": "No IDEs found for storage cleaning"
+                }
+
+            vscode_ides = [ide for ide in detection_result["ides"] if ide.get("type") == "vscode"]
+            if not vscode_ides:
+                return {
+                    "success": False,
+                    "error": "No VSCode-based IDEs detected",
+                    "message": "Storage cleaning is only applicable to VSCode-based IDEs"
+                }
+
+            # Process each VSCode-based IDE
+            for ide in vscode_ides:
+                ide_name = ide.get("display_name", "Unknown IDE")
+                editor_type = ide.get("editor_type", "VSCodium")
+                global_storage_path = ide.get("global_storage_path")
+                workspace_storage_path = ide.get("workspace_storage_path")
+
+                results["processed_ides"].append(ide_name)
+
+                try:
+                    print(f"🧹 Comprehensive storage cleaning for {ide_name}...")
+                    result = clean_storage_comprehensive(
+                        editor_type=editor_type,
+                        clean_global=clean_global,
+                        clean_workspace=clean_workspace,
+                        global_storage_path=global_storage_path,
+                        workspace_storage_path=workspace_storage_path
+                    )
+
+                    # Determine success
+                    storage_success = result.get('overall_success', True)
+
+                    operations = result.get('operations_performed', [])
+                    operations_text = " and ".join(operations) if operations else "storage"
+                    success_msg = f"{operations_text.title()} cleaned: {result.get('total_files_deleted', 0)} files deleted"
+
+                    if result.get('backup_paths'):
+                        success_msg += f", {len(result['backup_paths'])} backup(s) created"
+
+                    results["results"][ide_name] = {
+                        "success": storage_success,
+                        "data": result,
+                        "message": success_msg
+                    }
+
+                    if not storage_success:
+                        results["overall_success"] = False
+
+                except Exception as e:
+                    results["errors"].append(f"{ide_name}: {str(e)}")
+                    results["overall_success"] = False
+                    results["results"][ide_name] = {
+                        "success": False,
+                        "error": str(e),
+                        "message": "Failed to clean storage"
+                    }
+
+            return {
+                "success": results["overall_success"],
+                "data": results,
+                "message": f"Storage cleaning completed for {len(results['processed_ides'])} IDE(s)" if results["overall_success"] else f"Storage cleaning completed with {len(results['errors'])} error(s)"
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+                "message": "Failed to clean storage"
             }
 
     def run_all_operations(self) -> Dict[str, Any]:
@@ -1131,6 +1408,102 @@ class AugmentFreeAPI:
                 "message": "Failed to refresh system information"
             }
 
+    def get_diagnostic_info(self) -> Dict[str, Any]:
+        """
+        Get comprehensive diagnostic information for troubleshooting.
+
+        Returns:
+            dict: Diagnostic information
+        """
+        try:
+            print("\n" + "="*60)
+            print("🔍 SYSTEM DIAGNOSTIC INFORMATION")
+            print("="*60)
+
+            diagnostic = {
+                'timestamp': time.time(),
+                'admin_status': self.check_admin_privileges(),
+                'system_info': self.get_system_info(),
+                'ide_detection': self.detect_ides(),
+                'session_status': {}
+            }
+
+            # Display admin status
+            admin_info = diagnostic['admin_status']
+            print(f"🔐 Administrator Status: {'✅ Running as Admin' if admin_info.get('is_admin') else '❌ Not Admin'}")
+
+            # Display system info
+            sys_info = diagnostic['system_info']
+            if sys_info.get('success'):
+                data = sys_info.get('data', {})
+                print(f"🏠 Home Directory: {data.get('home_dir', 'Unknown')}")
+                print(f"📁 App Data Directory: {data.get('app_data_dir', 'Unknown')}")
+                print(f"🎯 Current Editor: {data.get('editor_type', 'Unknown')}")
+
+            # Display IDE detection results
+            ide_info = diagnostic['ide_detection']
+            if ide_info.get('success'):
+                ides = ide_info.get('ides', [])
+                print(f"\n🔍 Detected IDEs ({len(ides)}):")
+                for i, ide in enumerate(ides, 1):
+                    print(f"   {i}. {ide.get('display_name', 'Unknown')} ({ide.get('ide_type', 'unknown')})")
+                    if ide.get('editor_path'):
+                        exists = os.path.exists(ide.get('editor_path', ''))
+                        print(f"      Path: {ide.get('editor_path')} {'✅' if exists else '❌'}")
+
+                    # Check key paths for VSCode-based IDEs
+                    if ide.get('ide_type') == 'vscode':
+                        storage_path = ide.get('storage_path')
+                        db_path = ide.get('db_path')
+                        workspace_path = ide.get('workspace_storage_path')
+
+                        if storage_path:
+                            exists = os.path.exists(storage_path)
+                            print(f"      Storage: {'✅ Found' if exists else '❌ Missing'}")
+                        if db_path:
+                            exists = os.path.exists(db_path)
+                            print(f"      Database: {'✅ Found' if exists else '❌ Missing'}")
+                        if workspace_path:
+                            exists = os.path.exists(workspace_path)
+                            print(f"      Workspace: {'✅ Found' if exists else '❌ Missing'}")
+
+            # Get session status for each detected IDE
+            print(f"\n📊 Session Status:")
+            if diagnostic['ide_detection'].get('success'):
+                for ide in diagnostic['ide_detection'].get('ides', []):
+                    editor_type = ide.get('name', ide.get('editor_type', 'Unknown'))
+                    try:
+                        session_status = get_session_status(editor_type)
+                        diagnostic['session_status'][editor_type] = session_status
+
+                        if session_status.get('success'):
+                            total_files = session_status.get('total_session_files', 0)
+                            locked_files = session_status.get('locked_files', 0)
+                            print(f"   {editor_type}: {total_files} session files, {locked_files} locked")
+                        else:
+                            print(f"   {editor_type}: Error - {session_status.get('error', 'Unknown')}")
+                    except Exception as e:
+                        diagnostic['session_status'][editor_type] = {
+                            'success': False,
+                            'error': str(e)
+                        }
+                        print(f"   {editor_type}: Exception - {e}")
+
+            print("="*60)
+
+            return {
+                'success': True,
+                'data': diagnostic,
+                'message': 'Diagnostic information collected and displayed'
+            }
+
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'message': 'Failed to collect diagnostic information'
+            }
+
     def ensure_system_info_available(self) -> bool:
         """
         Ensure that system information is available before performing operations.
@@ -1147,7 +1520,7 @@ class AugmentFreeAPI:
 
             # Validate that we have the necessary paths for the current IDE type
             ide_type = self.current_ide_info.get("ide_type", "vscode")
-            
+
             if ide_type == "jetbrains":
                 # For JetBrains, we need the config path
                 if not self.current_ide_info.get("jetbrains_config_path"):

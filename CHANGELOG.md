@@ -8,16 +8,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- 
+-
 
 ### Enhanced
-- 
+-
 
 ### Fixed
-- 
+-
 
 ### Technical
-- 
+-
+
+## [v1.2.3] - 2025-06-17
+
+### Added
+- 🌐 **Global Storage Path Display** - Added global storage path to system information panel
+  - Shows global storage directory path for all detected VSCode-based IDEs
+  - Includes path in both regular system info and detected IDEs display
+  - Added translation support for "Global Storage Path" in English and Chinese
+  - Uses globe icon (🌐) to distinguish from other storage paths
+
+### Enhanced
+- 🤖 **Complete Automation Workflow** - Enhanced automation to include global storage cleaning
+  - Automation now cleans both workspace storage AND global storage directories
+  - Fixed incomplete automation that was causing "2 error(s)" in workflow completion
+  - Added comprehensive progress reporting for all storage cleaning operations
+  - Updated automation descriptions to reflect complete storage cleaning coverage
+
+### Fixed
+- 🔧 **IDE Detector Bug** - Fixed missing global_storage_path in IDE information
+  - Global storage path was being detected but lost during IDE info serialization
+  - Added global_storage_path to IDEInfo.to_dict() method for proper data persistence
+  - Ensures automation workflow has access to all required storage paths
+- 🎨 **UI Progress Reporting** - Fixed missing global storage results in automation display
+  - Added global storage cleaning results to automation progress dialogs
+  - Updated result display functions to show all storage operations
+  - Enhanced translation coverage for global storage progress messages
+
+### Technical
+- 🏗️ **API Enhancement** - Added global storage path to system information API
+- 🌐 **Translation Updates** - Added missing translation keys for global storage operations
+- 📊 **Progress Display** - Enhanced JavaScript functions to handle global storage results
+- 🔧 **Import Updates** - Added clean_global_storage import to automation module
 
 ## [v1.2.2] - 2025-06-17
 

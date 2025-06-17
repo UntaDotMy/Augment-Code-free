@@ -46,10 +46,11 @@ AugmentCode Free is a simple GUI tool for cleaning AugmentCode-related data, hel
 - 💙 **VSCode Series Support (***Enhanced***) (VSCode, VSCodium, Cursor, VS Code Insiders, etc.)**
   - Reset device ID and machine ID (Telemetry)
   - Clean specific records in SQLite database
-  - Clean workspace storage files
+  - Clean workspace storage files and global storage files
   - Automatic backup of original data
   - **Smart Path Detection** - Automatically find and verify all related file paths
   - **VS Code Insiders Support** - Complete support for Insiders version
+  - **Complete Storage Cleaning** - Cleans both workspaceStorage and globalStorage directories
 
 - 🧠 **JetBrains Series Support (***Enhanced***) (IDEA, PyCharm, GoLand, etc.)**
   - Reset PermanentDeviceId and PermanentUserId
@@ -65,14 +66,15 @@ AugmentCode Free is a simple GUI tool for cleaning AugmentCode-related data, hel
   - **Path Verification** - Only display actually existing files and directories
   - **Safe Copy** - Prevents escaping issues when copying paths
 
-- 🤖 **Full Automation Workflow (***New***)**
+- 🤖 **Full Automation Workflow (***Enhanced***)**
   - **One-Click Automation** - Complete automated workflow process
   - **Auto Signout** - Intelligent IDE process detection and closure
-  - **Auto Cleaning** - Execute all necessary data cleaning operations
+  - **Auto Cleaning** - Execute all necessary data cleaning operations (including global and workspace storage)
   - **Auto Restart** - Automatically restart IDE after cleaning
   - **Customizable Options** - Support selective execution of individual steps
   - **Detailed Progress Feedback** - Real-time display of each step's execution status
   - **Smart Result Display** - Complex operations don't auto-close after completion, users can review results in detail
+  - **Complete Storage Cleaning** - Automation workflow now includes complete globalStorage and workspaceStorage cleaning
 
 - 🌐 **Complete Multi-Language Support (***Enhanced***)**
   - **Instant Language Switching** - Chinese/English switching without refresh, immediate effect
