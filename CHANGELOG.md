@@ -7,12 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- 
+
+### Enhanced
+- 
+
+### Fixed
+- 
+
+### Technical
+- 
+
+## [v1.2.1] - 2025-06-17
+
 ### Fixed
 - 🔧 **GitHub Actions Workflow** - Fixed YAML syntax error in build.yml
   - Resolved line 206 syntax issue with changelog extraction
   - Simplified Python script approach to avoid YAML conflicts
   - Ensured proper workflow execution for auto-release system
-
 ## [v1.2.1] - 2025-06-17
 
 ### Added
