@@ -35,7 +35,7 @@ def install_dependencies():
         print("Using uv for dependency management")
         run_command("uv sync")
         # Install from requirements.txt to match GitHub Actions
-        run_command("uv add pyinstaller pillow")
+        run_command("uv add pyinstaller pillow requests")
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("uv not found, using pip")
         # Install from requirements.txt to match GitHub Actions
@@ -84,6 +84,7 @@ def build_executable():
     hidden_imports = [
         "pywebview",
         "jinja2",
+        "requests",
         "augment_free",
         "augment_free.api",
         "augment_free.utils",
@@ -161,7 +162,9 @@ def build_debug_executable():
         "augment_free.utils.ide_detector",
         "augment_free.utils.translation",
         "augment_free.api.handlers.automation",
+        "augment_free.api.handlers.account",
         "psutil",
+        "requests",
     ]
 
     for imp in hidden_imports:

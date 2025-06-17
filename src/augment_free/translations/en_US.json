@@ -39,6 +39,7 @@
       "refresh_success": "System information refreshed successfully",
       "refresh_failed": "Failed to refresh system information"
     },
+
     "operations": {
       "title": "🛠️ Cleanup Operations",
       "telemetry": {
@@ -156,7 +157,9 @@
       "language_changed": "Language switched to English",
       "automation_completed": "Automation workflow completed",
       "ide_closed": "IDE closed",
-      "ide_started": "IDE started"
+      "ide_started": "IDE started",
+      "token_extracted": "Access token extracted successfully",
+      "account_info_retrieved": "Account information retrieved successfully"
     },
     "error": {
       "telemetry_failed": "Failed to modify telemetry IDs",

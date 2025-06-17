@@ -196,14 +196,109 @@ jobs:
       run: |
         # Extract unreleased section from CHANGELOG.md
         if [ -f "CHANGELOG.md" ]; then
-          # Get content between "## [Unreleased]" and next "##" or "---"
-          changelog_content=$(sed -n '/## \[Unreleased\]/,/^## \|^---/p' CHANGELOG.md | sed '$d' | tail -n +2)
+          echo "📋 Extracting changelog content..."
+
+          # Use Python for reliable cross-platform extraction
+          # Extract from the version section that matches the current release
+          version="${{ inputs.version || github.ref_name }}"
+          changelog_content=$(python3 -c "
+import sys
+import re
+try:
+    with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    lines = content.split('\n')
+    version = '$version'
+
+    # First try to find the specific version section
+    version_start = -1
+    version_end = -1
+
+    # Look for version section like '## [v1.2.3]' or '## [1.2.3]'
+    version_patterns = [
+        f'## [{version}]',
+        f'## [{version.lstrip(\"v\")}]'
+    ]
+
+    for pattern in version_patterns:
+        for i, line in enumerate(lines):
+            if line.strip().startswith(pattern):
+                version_start = i + 1
+                break
+        if version_start != -1:
+            break
+
+    # If version section not found, try unreleased section
+    if version_start == -1:
+        for i, line in enumerate(lines):
+            if line.strip() == '## [Unreleased]':
+                version_start = i + 1
+                break
+
+    if version_start != -1:
+        # Find the end of the section
+        for i in range(version_start, len(lines)):
+            line = lines[i].strip()
+            if line.startswith('## ') or line == '---':
+                version_end = i
+                break
+
+        if version_end == -1:
+            version_end = len(lines)
+
+        section_lines = lines[version_start:version_end]
+
+        # Remove empty lines at the beginning and end
+        while section_lines and not section_lines[0].strip():
+            section_lines.pop(0)
+        while section_lines and not section_lines[-1].strip():
+            section_lines.pop()
+
+        # Filter out lines that are just section headers with no content
+        filtered_lines = []
+        skip_next = False
+        for i, line in enumerate(section_lines):
+            if line.strip().startswith('### '):
+                # Check if this section has content
+                has_content = False
+                for j in range(i + 1, len(section_lines)):
+                    next_line = section_lines[j].strip()
+                    if next_line.startswith('### '):
+                        break
+                    if next_line and next_line != '-':
+                        has_content = True
+                        break
+
+                if has_content:
+                    filtered_lines.append(line)
+                    skip_next = False
+                else:
+                    skip_next = True
+            elif not skip_next:
+                if line.strip() and line.strip() != '-':
+                    filtered_lines.append(line)
+
+        section_content = '\n'.join(filtered_lines)
+        print(section_content)
+    else:
+        print('')
+except Exception as e:
+    print('')
+")
+
+          # Debug: show what we extracted
+          echo "📝 Extracted content ($(echo "$changelog_content" | wc -l) lines):"
+          echo "$changelog_content" | head -10
 
           # If changelog content is empty, use a default message
-          if [ -z "$changelog_content" ]; then
+          if [ -z "$changelog_content" ] || [ "$(echo "$changelog_content" | tr -d '[:space:]')" = "" ]; then
+            echo "⚠️ No unreleased content found, using default message"
             changelog_content="### Changes
         - Various improvements and bug fixes
         - See commit history for detailed changes"
+          else
+            echo "✅ Found unreleased content"
           fi
 
           # Save to output (escape newlines for GitHub Actions)
@@ -211,7 +306,6 @@ jobs:
           echo "$changelog_content" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          echo "✅ Changelog content extracted"
         else
           echo "⚠️ CHANGELOG.md not found, using default content"
           echo "content<<EOF" >> $GITHUB_OUTPUT
@@ -247,6 +341,7 @@ jobs:
 
           ### ✨ Key Features
           - 🤖 **Full Automation Workflow** - Complete 4-step automation process
+          - 👤 **Account Information** - Integrated Augment account details and status
           - 🔍 **Smart IDE Detection** - Automatic detection with path verification
           - 💙 **VS Code Insiders Support** - Complete compatibility
           - 🌐 **Multi-language Interface** - Chinese/English switching

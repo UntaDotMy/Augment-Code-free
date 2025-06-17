@@ -13,6 +13,7 @@ from .workspace import clean_workspace_storage
 from .jetbrains import modify_jetbrains_ids, get_jetbrains_config_dir, get_jetbrains_info
 from .automation import run_full_automation, close_ide_processes, start_ide
 
+
 __all__ = [
     "modify_telemetry_ids",
     "clean_augment_data",
@@ -22,5 +23,5 @@ __all__ = [
     "get_jetbrains_info",
     "run_full_automation",
     "close_ide_processes",
-    "start_ide"
+    "start_ide",
 ]

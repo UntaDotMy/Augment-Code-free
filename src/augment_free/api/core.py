@@ -20,7 +20,7 @@ from .handlers import (
     get_jetbrains_info,
     run_full_automation,
     close_ide_processes,
-    start_ide
+    start_ide,
 )
 from ..utils.paths import (
     get_home_dir,
@@ -828,3 +828,5 @@ class AugmentFreeAPI:
                 "error": str(e),
                 "message": t("messages.error.translations_get_failed")
             }
+
+

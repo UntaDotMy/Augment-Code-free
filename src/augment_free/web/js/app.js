@@ -7,6 +7,7 @@ let detectedIDEs = [];
 let currentLanguage = 'zh_CN';
 let translations = {};
 let isShowingDetectedIDEs = false; // Flag to track if we're showing detected IDEs
+let currentAccountInfo = null; // Store current account information
 
 // DOM elements
 const elements = {
@@ -261,7 +262,9 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Default system info loaded');
         }
 
-        // Step 5: Check if this is the first time using the app
+
+
+        // Step 6: Check if this is the first time using the app
         checkFirstTimeUse();
 
         console.log('Application initialization complete');
@@ -1385,6 +1388,8 @@ function displayAutomationResults(result) {
         customContent: content
     });
 }
+
+
 
 // Display operation results
 function displayResults(operationName, result) {

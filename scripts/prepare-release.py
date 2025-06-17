@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Release preparation script for AugmentCode Free.
 
@@ -43,19 +44,52 @@ def update_changelog(version: str) -> bool:
             print("⚠️ No unreleased section found in CHANGELOG.md")
             return False
         
-        # Extract unreleased content
-        unreleased_pattern = r"## \[Unreleased\]\s*\n(.*?)(?=\n## |\n---|\Z)"
-        match = re.search(unreleased_pattern, content, re.DOTALL)
-        
-        if not match:
-            print("⚠️ Could not extract unreleased content")
+        # Extract unreleased content using more robust pattern
+        lines = content.split('\n')
+        unreleased_start = -1
+        unreleased_end = -1
+
+        # Find the start of unreleased section
+        for i, line in enumerate(lines):
+            if line.strip() == "## [Unreleased]":
+                unreleased_start = i + 1
+                break
+
+        if unreleased_start == -1:
+            print("⚠️ Could not find [Unreleased] section")
             return False
-        
-        unreleased_content = match.group(1).strip()
-        
-        if not unreleased_content:
+
+        # Find the end of unreleased section
+        for i in range(unreleased_start, len(lines)):
+            line = lines[i].strip()
+            if line.startswith("## ") or line == "---":
+                unreleased_end = i
+                break
+
+        if unreleased_end == -1:
+            unreleased_end = len(lines)
+
+        # Extract the content
+        unreleased_lines = lines[unreleased_start:unreleased_end]
+
+        # Remove empty lines at the beginning and end
+        while unreleased_lines and not unreleased_lines[0].strip():
+            unreleased_lines.pop(0)
+        while unreleased_lines and not unreleased_lines[-1].strip():
+            unreleased_lines.pop()
+
+        unreleased_content = '\n'.join(unreleased_lines)
+
+        if not unreleased_content.strip():
             print("⚠️ No unreleased changes found")
             return False
+
+        print(f"📝 Found unreleased content ({len(unreleased_lines)} lines)")
+        print("Preview:")
+        for line in unreleased_lines[:5]:  # Show first 5 lines
+            print(f"  {line}")
+        if len(unreleased_lines) > 5:
+            print(f"  ... and {len(unreleased_lines) - 5} more lines")
         
         # Create new versioned section
         versioned_section = f"""## [{version}] - {current_date}

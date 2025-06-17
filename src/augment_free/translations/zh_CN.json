@@ -39,6 +39,7 @@
       "refresh_success": "系统信息刷新成功",
       "refresh_failed": "系统信息刷新失败"
     },
+
     "operations": {
       "title": "🛠️ 清理操作",
       "telemetry": {
@@ -156,7 +157,9 @@
       "language_changed": "语言已切换为中文",
       "automation_completed": "自动化流程已完成",
       "ide_closed": "IDE已关闭",
-      "ide_started": "IDE已启动"
+      "ide_started": "IDE已启动",
+      "token_extracted": "访问令牌提取成功",
+      "account_info_retrieved": "账户信息获取成功"
     },
     "error": {
       "telemetry_failed": "遥测ID修改失败",

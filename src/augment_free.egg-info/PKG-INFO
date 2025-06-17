@@ -26,6 +26,7 @@ Requires-Dist: jinja2>=3.1.0
 Requires-Dist: pyinstaller>=6.14.1
 Requires-Dist: pillow>=11.2.1
 Requires-Dist: psutil>=5.9.0
+Requires-Dist: requests>=2.32.4
 Provides-Extra: dev
 Requires-Dist: black>=23.0.0; extra == "dev"
 Requires-Dist: isort>=5.12.0; extra == "dev"
@@ -180,7 +181,7 @@ python build.py
 
 ### 方式四：自动版本发布系统
 
-项目支持智能自动版本管理和发布：
+项目支持智能自动版本管理和发布，集成变更日志自动化：
 
 #### **🤖 自动版本检测（推荐）**：
 系统会根据提交信息自动确定版本类型：
@@ -189,12 +190,17 @@ python build.py
 - **补丁版本 (+0.0.1)**: 其他提交（bug修复等）
 
 ```bash
-# 只需正常提交，系统自动处理版本
+# 只需正常提交，系统自动处理版本和变更日志
 git add .
 git commit -m "feat: add new smart detection feature"
 git push origin main
-# 系统自动创建 v1.1.0 版本
+# 系统自动创建 v1.1.0 版本并更新 CHANGELOG.md
 ```
+
+#### **📋 变更日志自动化**：
+- **自动更新**: 发布时自动将 `[Unreleased]` 内容移至版本化部分
+- **发布集成**: GitHub Release 自动包含相应版本的变更日志
+- **手动准备**: `python scripts/prepare-release.py v1.2.3`
 
 #### **📋 手动版本发布**：
 ```bash
@@ -254,6 +260,7 @@ git commit -m "docs: update README"
 - **修复翻译系统**: 确保翻译文件正确打包到可执行文件中
 - **更新构建系统**: 统一所有构建脚本和 GitHub Actions，确保翻译文件包含
 - **🤖 全自动流程**: 实现一键自动化：自动登出 → 清理数据 → 准备登录 → 重启IDE
+- **📋 自动更新日志**: 发布时自动包含 CHANGELOG.md 内容
 
 ## 使用方法
 
