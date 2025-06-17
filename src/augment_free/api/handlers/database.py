@@ -1,6 +1,7 @@
 import sqlite3
 import shutil
 import time
+import os
 from ...utils.paths import get_db_path
 
 def _create_backup(file_path: str) -> str:
@@ -43,9 +44,13 @@ def clean_augment_data(editor_type: str = "VSCodium", db_path: str = None) -> di
             'editor_type': str
         }
     """
-    # Use provided path or fall back to hardcoded path
+    # Use provided path or fall back to system-detected path
     if db_path is None:
         db_path = get_db_path(editor_type)
+
+    # Validate that database path exists
+    if not os.path.exists(db_path):
+        raise FileNotFoundError(f"Database file not found at: {db_path}. Please ensure {editor_type} is properly installed and configured.")
 
     # Create backup before modification
     db_backup_path = _create_backup(db_path)

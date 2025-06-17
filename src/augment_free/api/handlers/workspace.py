@@ -52,14 +52,15 @@ def clean_workspace_storage(editor_type: str = "VSCodium", workspace_storage_pat
             'editor_type': str
         }
     """
-    # Use provided path or fall back to hardcoded path
+    # Use provided path or fall back to system-detected path
     if workspace_storage_path is None:
         workspace_path = get_workspace_storage_path(editor_type)
     else:
         workspace_path = Path(workspace_storage_path)
 
+    # Validate that workspace path exists
     if not os.path.exists(workspace_path):
-        raise FileNotFoundError(f"Workspace storage directory not found at: {workspace_path}")
+        raise FileNotFoundError(f"Workspace storage directory not found at: {workspace_path}. Please ensure {editor_type} is properly installed and configured.")
 
     # Convert to Path object for better path handling
     workspace_path = Path(workspace_path)

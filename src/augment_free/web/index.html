@@ -285,7 +285,73 @@
         </div>
     </div>
 
-    <!-- Loading Overlay -->
+    <!-- Progress Panel -->
+    <div class="progress-overlay" id="progressOverlay" style="display: none;">
+        <div class="progress-panel">
+            <div class="progress-header">
+                <h3 id="progressTitle" data-i18n="ui.progress.title">正在处理...</h3>
+                <button class="progress-close" onclick="hideProgress()">×</button>
+            </div>
+            
+            <div class="progress-content">
+                <!-- Overall Progress -->
+                <div class="progress-section">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="overallProgressBar">
+                            <div class="progress-fill" id="overallProgressFill"></div>
+                        </div>
+                        <span class="progress-text" id="overallProgressText">0%</span>
+                    </div>
+                </div>
+
+                <!-- Current Operation -->
+                <div class="progress-section">
+                    <h4 id="currentOperationTitle" data-i18n="ui.progress.current_operation">当前操作</h4>
+                    <div class="current-operation" id="currentOperation">
+                        <div class="operation-icon">🔄</div>
+                        <div class="operation-details">
+                            <div class="operation-name" id="currentOperationName" data-i18n="ui.progress.preparing">准备中...</div>
+                            <div class="operation-status" id="currentOperationStatus" data-i18n="ui.progress.detecting_ides">正在检测IDE...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IDE Progress -->
+                <div class="progress-section" id="ideProgressSection" style="display: none;">
+                    <h4 data-i18n="ui.progress.ide_progress">IDE 处理进度</h4>
+                    <div class="ide-progress-list" id="ideProgressList">
+                        <!-- IDE progress items will be added here -->
+                    </div>
+                </div>
+
+                <!-- Detailed Log -->
+                <div class="progress-section">
+                    <h4 data-i18n="ui.progress.detailed_log">详细日志</h4>
+                    <div class="progress-log" id="progressLog">
+                        <div class="log-entry">
+                            <span class="log-time">00:00:00</span>
+                            <span class="log-message" data-i18n="ui.progress.start_operation">开始操作...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="progress-section" id="statisticsSection" style="display: none;">
+                    <h4 data-i18n="ui.progress.statistics">统计信息</h4>
+                    <div class="statistics-grid" id="statisticsGrid">
+                        <!-- Statistics will be added here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-footer">
+                <button class="btn-secondary" id="cancelButton" onclick="cancelOperation()" style="display: none;" data-i18n="ui.progress.cancel_operation">取消操作</button>
+                <div class="progress-time" id="progressTime">00:00</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay (simplified for quick operations) -->
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="loading-spinner">
             <div class="spinner"></div>

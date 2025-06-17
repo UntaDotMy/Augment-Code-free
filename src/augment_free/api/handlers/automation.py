@@ -148,7 +148,8 @@ def run_full_automation(ide_info: Optional[Dict[str, Any]] = None,
                        include_signout: bool = True,
                        include_cleaning: bool = True, 
                        include_signin: bool = True,
-                       include_restart: bool = True) -> Dict[str, Any]:
+                       include_restart: bool = True,
+                       clean_all_ides: bool = False) -> Dict[str, Any]:
     """
     Run the complete automation workflow:
     1. Auto Signout (close IDE)
@@ -162,6 +163,7 @@ def run_full_automation(ide_info: Optional[Dict[str, Any]] = None,
         include_cleaning: Whether to perform cleaning operations
         include_signin: Whether to prepare for signin (currently just a status)
         include_restart: Whether to restart the IDE
+        clean_all_ides: Whether to clean all detected IDEs (if True, ignores ide_info parameter)
         
     Returns:
         Comprehensive automation results
@@ -175,139 +177,348 @@ def run_full_automation(ide_info: Optional[Dict[str, Any]] = None,
     }
     
     try:
-        # Step 1: Auto-detect IDE if not provided
-        if ide_info is None:
+        # Step 1: Auto-detect IDE if not provided or if cleaning all IDEs
+        if ide_info is None or clean_all_ides:
             detection_result = detect_ides()
             if detection_result["success"] and detection_result.get("ides"):
-                ide_info = detection_result["ides"][0]  # Use first detected IDE
-                results["ide_info"] = ide_info
+                if clean_all_ides:
+                    # Use all detected IDEs
+                    detected_ides = detection_result["ides"]
+                    results["ide_info"] = detected_ides
+                else:
+                    # Use first detected IDE
+                    ide_info = detection_result["ides"][0]
+                    results["ide_info"] = ide_info
             else:
                 results["success"] = False
                 results["errors"].append("No IDE detected for automation")
                 return results
         
-        ide_name = ide_info.get("display_name", "Unknown IDE")
-        ide_type = ide_info.get("ide_type", "vscode")
-        
         # Step 2: Auto Signout (Close IDE)
         if include_signout:
-            print(f"🔄 Step 1/4: Auto Signout - Closing {ide_name}...")
-            signout_result = close_ide_processes(ide_info)
-            results["steps"]["signout"] = signout_result
-            
-            if not signout_result["success"]:
-                results["errors"].append(f"Signout failed: {signout_result.get('error', 'Unknown error')}")
+            if clean_all_ides:
+                print("🔄 Step 1/4: Auto Signout - Closing all detected IDEs...")
+                signout_results = {}
+                for ide in detected_ides:
+                    ide_name = ide.get("display_name", "Unknown IDE")
+                    print(f"  - Closing {ide_name}...")
+                    signout_result = close_ide_processes(ide)
+                    signout_results[ide_name] = signout_result
+                    if not signout_result["success"]:
+                        results["errors"].append(f"{ide_name} signout failed: {signout_result.get('error', 'Unknown error')}")
+                results["steps"]["signout"] = signout_results
+            else:
+                print(f"🔄 Step 1/4: Auto Signout - Closing {ide_info.get('display_name', 'Unknown IDE')}...")
+                signout_result = close_ide_processes(ide_info)
+                results["steps"]["signout"] = signout_result
+                
+                if not signout_result["success"]:
+                    results["errors"].append(f"Signout failed: {signout_result.get('error', 'Unknown error')}")
             
             # Wait a moment for processes to fully close
             time.sleep(2)
         
         # Step 3: Auto DB Cleaning
         if include_cleaning:
-            print(f"🔄 Step 2/4: Auto Cleaning - Cleaning {ide_name} data...")
-            
-            if ide_type == "jetbrains":
-                # JetBrains: only modify IDs
-                cleaning_result = modify_jetbrains_ids(ide_info.get("jetbrains_config_path"))
-                results["steps"]["cleaning"] = {
-                    "telemetry": cleaning_result,
-                    "database": {"success": True, "message": "Not applicable for JetBrains"},
-                    "workspace": {"success": True, "message": "Not applicable for JetBrains"}
-                }
-            else:
-                # VSCode-based: full cleaning
+            if clean_all_ides:
+                print("🔄 Step 2/4: Auto Cleaning - Cleaning all detected IDEs...")
                 cleaning_results = {}
                 
-                # Telemetry cleaning
-                try:
-                    telemetry_result = modify_telemetry_ids(
-                        editor_type=ide_info.get("editor_type", "Code"),
-                        storage_path=ide_info.get("storage_path"),
-                        machine_id_path=ide_info.get("machine_id_path")
-                    )
-                    cleaning_results["telemetry"] = {
-                        "success": True,
-                        "data": telemetry_result,
-                        "message": "Telemetry IDs modified successfully"
-                    }
-                except Exception as e:
-                    cleaning_results["telemetry"] = {
-                        "success": False,
-                        "error": str(e),
-                        "message": "Failed to modify telemetry IDs"
-                    }
-                
-                # Database cleaning
-                try:
-                    db_result = clean_augment_data(
-                        editor_type=ide_info.get("editor_type", "Code"),
-                        db_path=ide_info.get("db_path")
-                    )
-                    cleaning_results["database"] = {
-                        "success": True,
-                        "data": db_result,
-                        "message": f"Database cleaned: {db_result.get('deleted_rows', 0)} rows deleted"
-                    }
-                except Exception as e:
-                    cleaning_results["database"] = {
-                        "success": False,
-                        "error": str(e),
-                        "message": "Failed to clean database"
-                    }
-                
-                # Workspace cleaning
-                try:
-                    workspace_result = clean_workspace_storage(
-                        editor_type=ide_info.get("editor_type", "Code"),
-                        workspace_storage_path=ide_info.get("workspace_storage_path")
-                    )
-                    cleaning_results["workspace"] = {
-                        "success": True,
-                        "data": workspace_result,
-                        "message": f"Workspace cleaned: {workspace_result.get('deleted_files_count', 0)} files deleted"
-                    }
-                except Exception as e:
-                    cleaning_results["workspace"] = {
-                        "success": False,
-                        "error": str(e),
-                        "message": "Failed to clean workspace"
-                    }
+                for ide in detected_ides:
+                    ide_name = ide.get("display_name", "Unknown IDE")
+                    ide_type = ide.get("ide_type", "vscode")
+                    print(f"  - Cleaning {ide_name}...")
+                    
+                    if ide_type == "jetbrains":
+                        # JetBrains: only modify IDs
+                        jetbrains_config_path = ide.get("jetbrains_config_path")
+                        if not jetbrains_config_path:
+                            jetbrains_config_path = get_jetbrains_config_dir()
+                        
+                        if not jetbrains_config_path:
+                            results["errors"].append(f"{ide_name}: JetBrains config path not found")
+                            cleaning_results[ide_name] = {"success": False, "error": "JetBrains config path not found"}
+                            continue
+                        
+                        cleaning_result = modify_jetbrains_ids(jetbrains_config_path)
+                        cleaning_results[ide_name] = {
+                            "telemetry": cleaning_result,
+                            "database": {"success": True, "message": "Not applicable for JetBrains"},
+                            "workspace": {"success": True, "message": "Not applicable for JetBrains"}
+                        }
+                    else:
+                        # VSCode-based: full cleaning
+                        ide_cleaning_results = {}
+                        
+                        # Telemetry cleaning
+                        try:
+                            storage_path = ide.get("storage_path")
+                            machine_id_path = ide.get("machine_id_path")
+                            editor_type = ide.get("name", ide.get("editor_type", "VSCodium"))
+                            
+                            if not storage_path:
+                                storage_path = get_storage_path(editor_type)
+                            
+                            if not os.path.exists(storage_path):
+                                raise ValueError(f"Storage file not found at {storage_path}")
+                            
+                            if not machine_id_path:
+                                machine_id_path = get_machine_id_path(editor_type)
+                            
+                            telemetry_result = modify_telemetry_ids(
+                                editor_type=editor_type,
+                                storage_path=storage_path,
+                                machine_id_path=machine_id_path
+                            )
+                            ide_cleaning_results["telemetry"] = {
+                                "success": True,
+                                "data": telemetry_result,
+                                "message": "Telemetry IDs modified successfully"
+                            }
+                        except Exception as e:
+                            ide_cleaning_results["telemetry"] = {
+                                "success": False,
+                                "error": str(e),
+                                "message": "Failed to modify telemetry IDs"
+                            }
+                        
+                        # Database cleaning
+                        try:
+                            db_path = ide.get("db_path")
+                            if not db_path:
+                                db_path = get_db_path(editor_type)
+                            
+                            if not os.path.exists(db_path):
+                                raise ValueError(f"Database file not found at {db_path}")
+                            
+                            db_result = clean_augment_data(
+                                editor_type=editor_type,
+                                db_path=db_path
+                            )
+                            ide_cleaning_results["database"] = {
+                                "success": True,
+                                "data": db_result,
+                                "message": f"Database cleaned: {db_result.get('deleted_rows', 0)} rows deleted"
+                            }
+                        except Exception as e:
+                            ide_cleaning_results["database"] = {
+                                "success": False,
+                                "error": str(e),
+                                "message": "Failed to clean database"
+                            }
+                        
+                        # Workspace cleaning
+                        try:
+                            workspace_storage_path = ide.get("workspace_storage_path")
+                            if not workspace_storage_path:
+                                workspace_storage_path = get_workspace_storage_path(editor_type)
+                            
+                            if not os.path.exists(workspace_storage_path):
+                                raise ValueError(f"Workspace storage directory not found at {workspace_storage_path}")
+                            
+                            workspace_result = clean_workspace_storage(
+                                editor_type=editor_type,
+                                workspace_storage_path=workspace_storage_path
+                            )
+                            ide_cleaning_results["workspace"] = {
+                                "success": True,
+                                "data": workspace_result,
+                                "message": f"Workspace cleaned: {workspace_result.get('deleted_files_count', 0)} files deleted"
+                            }
+                        except Exception as e:
+                            ide_cleaning_results["workspace"] = {
+                                "success": False,
+                                "error": str(e),
+                                "message": "Failed to clean workspace"
+                            }
+                        
+                        cleaning_results[ide_name] = ide_cleaning_results
+                        
+                        # Check if any cleaning operation failed for this IDE
+                        for operation, result in ide_cleaning_results.items():
+                            if not result["success"]:
+                                results["errors"].append(f"{ide_name} {operation} failed: {result.get('error', 'Unknown error')}")
                 
                 results["steps"]["cleaning"] = cleaning_results
+            else:
+                # Original single IDE cleaning logic
+                ide_name = ide_info.get("display_name", "Unknown IDE")
+                ide_type = ide_info.get("ide_type", "vscode")
+                editor_type = ide_info.get("name", ide_info.get("editor_type", ""))
                 
-                # Check if any cleaning operation failed
-                for operation, result in cleaning_results.items():
-                    if not result["success"]:
-                        results["errors"].append(f"Cleaning {operation} failed: {result.get('error', 'Unknown error')}")
+                # Validate that we have proper IDE information
+                if not ide_info or not isinstance(ide_info, dict):
+                    results["success"] = False
+                    results["errors"].append("Invalid IDE information provided")
+                    return results
+                
+                # Ensure we have the required editor type
+                if not editor_type:
+                    results["success"] = False
+                    results["errors"].append("Editor type not found in IDE information")
+                    return results
+                
+                print(f"🔄 Step 2/4: Auto Cleaning - Cleaning {ide_name} data...")
+                
+                if ide_type == "jetbrains":
+                    # JetBrains: only modify IDs
+                    jetbrains_config_path = ide_info.get("jetbrains_config_path")
+                    if not jetbrains_config_path:
+                        results["errors"].append("JetBrains config path not found in IDE information")
+                        cleaning_result = {"success": False, "error": "JetBrains config path not found"}
+                    else:
+                        cleaning_result = modify_jetbrains_ids(jetbrains_config_path)
+                    
+                    results["steps"]["cleaning"] = {
+                        "telemetry": cleaning_result,
+                        "database": {"success": True, "message": "Not applicable for JetBrains"},
+                        "workspace": {"success": True, "message": "Not applicable for JetBrains"}
+                    }
+                else:
+                    # VSCode-based: full cleaning using system-detected paths
+                    cleaning_results = {}
+                    
+                    # Telemetry cleaning - use system-detected paths
+                    try:
+                        storage_path = ide_info.get("storage_path")
+                        machine_id_path = ide_info.get("machine_id_path")
+                        
+                        if not storage_path:
+                            raise ValueError("Storage path not found in IDE information")
+                        
+                        telemetry_result = modify_telemetry_ids(
+                            editor_type=editor_type,
+                            storage_path=storage_path,
+                            machine_id_path=machine_id_path
+                        )
+                        cleaning_results["telemetry"] = {
+                            "success": True,
+                            "data": telemetry_result,
+                            "message": "Telemetry IDs modified successfully"
+                        }
+                    except Exception as e:
+                        cleaning_results["telemetry"] = {
+                            "success": False,
+                            "error": str(e),
+                            "message": "Failed to modify telemetry IDs"
+                        }
+                    
+                    # Database cleaning - use system-detected path
+                    try:
+                        db_path = ide_info.get("db_path")
+                        if not db_path:
+                            raise ValueError("Database path not found in IDE information")
+                        
+                        db_result = clean_augment_data(
+                            editor_type=editor_type,
+                            db_path=db_path
+                        )
+                        cleaning_results["database"] = {
+                            "success": True,
+                            "data": db_result,
+                            "message": f"Database cleaned: {db_result.get('deleted_rows', 0)} rows deleted"
+                        }
+                    except Exception as e:
+                        cleaning_results["database"] = {
+                            "success": False,
+                            "error": str(e),
+                            "message": "Failed to clean database"
+                        }
+                    
+                    # Workspace cleaning - use system-detected path
+                    try:
+                        workspace_storage_path = ide_info.get("workspace_storage_path")
+                        if not workspace_storage_path:
+                            raise ValueError("Workspace storage path not found in IDE information")
+                        
+                        workspace_result = clean_workspace_storage(
+                            editor_type=editor_type,
+                            workspace_storage_path=workspace_storage_path
+                        )
+                        cleaning_results["workspace"] = {
+                            "success": True,
+                            "data": workspace_result,
+                            "message": f"Workspace cleaned: {workspace_result.get('deleted_files_count', 0)} files deleted"
+                        }
+                    except Exception as e:
+                        cleaning_results["workspace"] = {
+                            "success": False,
+                            "error": str(e),
+                            "message": "Failed to clean workspace"
+                        }
+                    
+                    results["steps"]["cleaning"] = cleaning_results
+                    
+                    # Check if any cleaning operation failed
+                    for operation, result in cleaning_results.items():
+                        if not result["success"]:
+                            results["errors"].append(f"Cleaning {operation} failed: {result.get('error', 'Unknown error')}")
         
         # Step 4: Auto Signin (Preparation)
         if include_signin:
-            print(f"🔄 Step 3/4: Auto Signin - Preparing for new login...")
-            results["steps"]["signin"] = {
-                "success": True,
-                "message": f"{ide_name} is ready for new Augment plugin login",
-                "instructions": [
-                    "1. Start the IDE",
-                    "2. Install/Enable Augment plugin if needed", 
-                    "3. Login with new credentials",
-                    "4. Enjoy your fresh Augment experience!"
-                ]
-            }
+            if clean_all_ides:
+                print("🔄 Step 3/4: Auto Signin - Preparing all IDEs for new login...")
+                signin_results = {}
+                for ide in detected_ides:
+                    ide_name = ide.get("display_name", "Unknown IDE")
+                    signin_results[ide_name] = {
+                        "success": True,
+                        "message": f"{ide_name} is ready for new Augment plugin login",
+                        "instructions": [
+                            "1. Start the IDE",
+                            "2. Install/Enable Augment plugin if needed", 
+                            "3. Login with new credentials",
+                            "4. Enjoy your fresh Augment experience!"
+                        ]
+                    }
+                results["steps"]["signin"] = signin_results
+            else:
+                print(f"🔄 Step 3/4: Auto Signin - Preparing for new login...")
+                ide_name = ide_info.get("display_name", "Unknown IDE")
+                results["steps"]["signin"] = {
+                    "success": True,
+                    "message": f"{ide_name} is ready for new Augment plugin login",
+                    "instructions": [
+                        "1. Start the IDE",
+                        "2. Install/Enable Augment plugin if needed", 
+                        "3. Login with new credentials",
+                        "4. Enjoy your fresh Augment experience!"
+                    ]
+                }
         
         # Step 5: Auto Restart IDE
         if include_restart:
-            print(f"🔄 Step 4/4: Auto Restart - Starting {ide_name}...")
-            restart_result = start_ide(ide_info)
-            results["steps"]["restart"] = restart_result
-            
-            if not restart_result["success"]:
-                results["errors"].append(f"Restart failed: {restart_result.get('error', 'Unknown error')}")
+            if clean_all_ides:
+                print("🔄 Step 4/4: Auto Restart - Starting all IDEs...")
+                restart_results = {}
+                for ide in detected_ides:
+                    ide_name = ide.get("display_name", "Unknown IDE")
+                    print(f"  - Starting {ide_name}...")
+                    restart_result = start_ide(ide)
+                    restart_results[ide_name] = restart_result
+                    if not restart_result["success"]:
+                        results["errors"].append(f"{ide_name} restart failed: {restart_result.get('error', 'Unknown error')}")
+                results["steps"]["restart"] = restart_results
+            else:
+                print(f"🔄 Step 4/4: Auto Restart - Starting {ide_info.get('display_name', 'Unknown IDE')}...")
+                restart_result = start_ide(ide_info)
+                results["steps"]["restart"] = restart_result
+                
+                if not restart_result["success"]:
+                    results["errors"].append(f"Restart failed: {restart_result.get('error', 'Unknown error')}")
         
         # Determine overall success
         if results["errors"]:
             results["success"] = False
-            results["message"] = f"Automation completed with {len(results['errors'])} error(s)"
+            if clean_all_ides:
+                results["message"] = f"Automation completed with {len(results['errors'])} error(s) for all IDEs"
+            else:
+                results["message"] = f"Automation completed with {len(results['errors'])} error(s)"
         else:
-            results["message"] = f"Full automation completed successfully for {ide_name}"
+            if clean_all_ides:
+                results["message"] = f"Full automation completed successfully for all {len(detected_ides)} detected IDE(s)"
+            else:
+                results["message"] = f"Full automation completed successfully for {ide_info.get('display_name', 'Unknown IDE')}"
         
         return results
         

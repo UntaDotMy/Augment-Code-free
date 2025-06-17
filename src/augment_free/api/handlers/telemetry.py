@@ -52,14 +52,15 @@ def modify_telemetry_ids(editor_type: str = "VSCodium", storage_path: str = None
             'editor_type': str
         }
     """
-    # Use provided paths or fall back to hardcoded paths
+    # Use provided paths or fall back to system-detected paths
     if storage_path is None:
         storage_path = get_storage_path(editor_type)
     if machine_id_path is None:
         machine_id_path = get_machine_id_path(editor_type)
 
+    # Validate that storage path exists
     if not os.path.exists(storage_path):
-        raise FileNotFoundError(f"Storage file not found at: {storage_path}")
+        raise FileNotFoundError(f"Storage file not found at: {storage_path}. Please ensure {editor_type} is properly installed and configured.")
 
     # Create backups before modification
     storage_backup_path = _create_backup(storage_path)

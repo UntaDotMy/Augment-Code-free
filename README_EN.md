@@ -31,8 +31,9 @@ AugmentCode Free is a simple GUI tool for cleaning AugmentCode-related data, hel
   - Cross-platform desktop application based on webview
   - Intuitive interface design with responsive layout
   - Real-time operation feedback
-  - Chinese/English bilingual interface switching
+  - **Complete Chinese/English bilingual interface switching** - No refresh needed, instant effect
   - Optimized notification system (no overlap)
+  - **Smart Progress Dialogs** - Complex operations don't auto-close, users can review results in detail
 
 - 🔍 **Smart IDE Detection (***Enhanced***)**
   - Automatically scan installed IDEs on the system
@@ -63,6 +64,21 @@ AugmentCode Free is a simple GUI tool for cleaning AugmentCode-related data, hel
   - Detailed operation logs and result feedback
   - **Path Verification** - Only display actually existing files and directories
   - **Safe Copy** - Prevents escaping issues when copying paths
+
+- 🤖 **Full Automation Workflow (***New***)**
+  - **One-Click Automation** - Complete automated workflow process
+  - **Auto Signout** - Intelligent IDE process detection and closure
+  - **Auto Cleaning** - Execute all necessary data cleaning operations
+  - **Auto Restart** - Automatically restart IDE after cleaning
+  - **Customizable Options** - Support selective execution of individual steps
+  - **Detailed Progress Feedback** - Real-time display of each step's execution status
+  - **Smart Result Display** - Complex operations don't auto-close after completion, users can review results in detail
+
+- 🌐 **Complete Multi-Language Support (***Enhanced***)**
+  - **Instant Language Switching** - Chinese/English switching without refresh, immediate effect
+  - **Complete Translation Coverage** - All interface elements, progress info, error messages support translation
+  - **Dynamic Content Translation** - Progress dialogs, result panels and other dynamic content update language in real-time
+  - **No Hardcoded Text** - Complete elimination of hardcoded Chinese text, ensuring internationalization experience
 
 ## Installation
 
@@ -230,6 +246,8 @@ This modified version includes extensive refactoring and feature enhancements ba
 - **One-Click Copy Feature** - All verified paths support one-click copy to clipboard
 - **Real-Time Status Updates** - Improved status checking mechanism prevents freezing
 - **Auto-Refresh Persistence** - Maintains IDE display after detection, won't be overridden by auto-refresh
+- **Smart Progress Management** - Complex operations (All Operations, Automation Workflows) don't auto-close after completion, users can review detailed results
+- **Complete Translation Experience** - Instant language switching, all dynamic content updates in real-time, no hardcoded text
 
 ### 🛠️ **Technical Improvements**
 - **Backend Path Verification** - Python backend actually checks file existence

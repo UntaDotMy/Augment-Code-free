@@ -20,6 +20,27 @@ const elements = {
     buttons: {}
 };
 
+// Progress Management System
+let progressManager = {
+    isActive: false,
+    startTime: null,
+    timer: null,
+    currentOperation: null,
+    totalSteps: 0,
+    currentStep: 0,
+    ideProgress: {},
+    statistics: {
+        totalIDEs: 0,
+        processedIDEs: 0,
+        successfulIDEs: 0,
+        failedIDEs: 0,
+        totalFilesDeleted: 0,
+        totalRowsDeleted: 0,
+        totalBackupsCreated: 0
+    },
+    logEntries: []
+};
+
 // Translation functions
 function t(key, params = {}) {
     const keys = key.split('.');
@@ -143,11 +164,55 @@ function updateUILanguage() {
     if (detectBtn) {
         detectBtn.title = t('ui.header.detect_tooltip');
     }
+
+    // Update any visible progress dialogs
+    updateProgressLanguage();
+
+    // Update any visible results panels
+    updateResultsLanguage();
 }
 
 async function toggleLanguage() {
     const newLang = currentLanguage === 'zh_CN' ? 'en_US' : 'zh_CN';
     await switchLanguage(newLang);
+}
+
+// Update progress dialog language
+function updateProgressLanguage() {
+    // Update progress modal if visible
+    const progressModal = document.querySelector('.progress-modal');
+    if (progressModal && progressModal.style.display !== 'none') {
+        // Update progress title and labels
+        const titleElement = progressModal.querySelector('.progress-title');
+        if (titleElement && titleElement.getAttribute('data-i18n')) {
+            titleElement.textContent = t(titleElement.getAttribute('data-i18n'));
+        }
+
+        // Update any other progress elements with translation keys
+        progressModal.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            element.textContent = t(key);
+        });
+    }
+}
+
+// Update results panel language
+function updateResultsLanguage() {
+    // Update results panel if visible
+    const resultsPanel = document.getElementById('resultsPanel');
+    if (resultsPanel && resultsPanel.style.display !== 'none') {
+        // Update results title
+        const titleElement = resultsPanel.querySelector('[data-i18n="ui.results.title"]');
+        if (titleElement) {
+            titleElement.textContent = t('ui.results.title');
+        }
+
+        // Update any other results elements with translation keys
+        resultsPanel.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            element.textContent = t(key);
+        });
+    }
 }
 
 function updateDynamicContent() {
@@ -262,8 +327,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Default system info loaded');
         }
 
-
-
         // Step 6: Check if this is the first time using the app
         checkFirstTimeUse();
 
@@ -338,6 +401,9 @@ function initializeElements() {
     // Other elements
     elements.ideCount = document.getElementById('ideCount');
     elements.detectStatus = document.getElementById('detectStatus');
+
+    // Initialize progress elements
+    initializeProgressElements();
 }
 
 // This function is no longer needed as we removed the editor selector
@@ -948,31 +1014,100 @@ function checkAPIAvailable() {
     return true;
 }
 
-// Modify telemetry IDs with preview
+// Modify telemetry IDs
 async function modifyTelemetry() {
     if (isOperationRunning || !checkAPIAvailable()) return;
 
-    // Show preview of what will be changed
-    await showOperationPreview('telemetry');
-
-    showLoading(t('ui.loading.resetting'));
+    showProgress(t('ui.operations.telemetry.title'), 3, true);
+    updateCurrentOperation(t('ui.progress.detecting_ides'), t('ui.progress.detecting_ides'), '🔍');
 
     try {
-        const result = await pywebview.api.modify_telemetry();
-        displayResults(t('ui.operations.telemetry.title'), result);
+        // Step 1: Detect IDEs
+        addLogEntry(t('ui.progress.detecting_ides'), 'info');
+        const detectionResult = await pywebview.api.detect_ides();
+        
+        if (!detectionResult.success || !detectionResult.ides || detectionResult.ides.length === 0) {
+            addLogEntry(t('ui.progress.no_ides_detected'), 'error');
+            updateCurrentOperation(t('ui.progress.detection_failed'), t('ui.progress.no_ides_detected'), '❌');
+            updateOverallProgress(100);
+            setTimeout(() => {
+                hideProgress();
+                showMessage(t('ui.progress.no_ides_detected'), 'error');
+            }, 2000);
+            return;
+        }
 
-        // Refresh system info after operation
-        setTimeout(() => {
-            loadSystemInfo();
-        }, 1000);
-    } catch (error) {
-        displayResults(t('ui.operations.telemetry.title'), {
-            success: false,
-            error: error.message,
-            message: t('messages.error.telemetry_failed')
+        const detectedIDEs = detectionResult.ides;
+        addLogEntry(t('ui.progress.detected_ides', { count: detectedIDEs.length }), 'success');
+        updateOverallProgress(20);
+
+        // Step 2: Add IDE progress items
+        updateCurrentOperation(t('ui.progress.preparing'), t('ui.progress.preparing_processing'), '⚙️');
+        detectedIDEs.forEach(ide => {
+            addIDEProgress(ide.display_name, ide.ide_type);
         });
-    } finally {
-        hideLoading();
+        updateOverallProgress(40);
+
+        // Step 3: Process each IDE
+        updateCurrentOperation(t('ui.progress.processing_ides'), t('ui.progress.processing_telemetry'), '🔧');
+        
+        for (let i = 0; i < detectedIDEs.length; i++) {
+            const ide = detectedIDEs[i];
+            const progress = 40 + (i / detectedIDEs.length) * 50;
+            
+            updateIDEProgress(ide.display_name, 'processing', t('ui.progress.processing_telemetry'));
+            updateOverallProgress(progress);
+
+            try {
+                const result = await pywebview.api.modify_telemetry();
+                
+                if (result.success && result.data && result.data.results) {
+                    const ideResult = result.data.results[ide.display_name];
+                    if (ideResult && ideResult.success) {
+                        const stats = {
+                            'storage_modified': t('ui.progress.status.yes'),
+                            'machine_id_changed': t('ui.progress.status.yes'),
+                            'device_id_changed': t('ui.progress.status.yes')
+                        };
+
+                        if (ideResult.data) {
+                            if (ideResult.data.old_machine_id && ideResult.data.new_machine_id) {
+                                stats['machine_id_changed'] = t('ui.progress.status.updated');
+                            }
+                            if (ideResult.data.old_device_id && ideResult.data.new_device_id) {
+                                stats['device_id_changed'] = t('ui.progress.status.updated');
+                            }
+                        }
+                        
+                        updateIDEProgress(ide.display_name, 'completed', t('ui.progress.machine_code_reset_success'), stats);
+                        progressManager.statistics.totalBackupsCreated += 2; // storage + machine_id backups
+                    } else {
+                        updateIDEProgress(ide.display_name, 'error', ideResult?.message || t('ui.progress.operation_failed'));
+                    }
+                } else {
+                    updateIDEProgress(ide.display_name, 'error', result.message || t('ui.progress.operation_failed'));
+                }
+            } catch (error) {
+                updateIDEProgress(ide.display_name, 'error', error.message);
+            }
+        }
+
+        updateOverallProgress(90);
+        updateCurrentOperation(t('ui.progress.completed'), t('ui.progress.all_operations_complete'), '✅');
+        addLogEntry(t('ui.progress.operation_completed'), 'success');
+        
+        setTimeout(() => {
+            hideProgress();
+            showMessage(t('ui.operations.telemetry.title') + ' ' + t('ui.progress.completed'), 'success');
+        }, 2000);
+
+    } catch (error) {
+        addLogEntry(t('ui.progress.operation_error') + ': ' + error.message, 'error');
+        updateCurrentOperation(t('ui.progress.failed'), t('ui.progress.operation_error'), '❌');
+        setTimeout(() => {
+            hideProgress();
+            showMessage(t('ui.operations.telemetry.title') + ' ' + t('ui.progress.failed') + ': ' + error.message, 'error');
+        }, 2000);
     }
 }
 
@@ -1086,112 +1221,442 @@ function closePreviewModal() {
     }
 }
 
-// Clean database with preview
+// Clean database
 async function cleanDatabase() {
     if (isOperationRunning || !checkAPIAvailable()) return;
 
-    // Show preview of what will be cleaned
-    await showOperationPreview('database');
+    showProgress(t('ui.operations.database.title'), 3, true);
+    updateCurrentOperation(t('ui.progress.detecting_ides'), t('ui.progress.detecting_ides_desc'), '🔍');
 
-    showLoading(t('ui.loading.cleaning'));
+    try {
+        // Step 1: Detect IDEs
+        addLogEntry(t('ui.progress.start_detecting'), 'info');
+        const detectionResult = await pywebview.api.detect_ides();
+
+        if (!detectionResult.success || !detectionResult.ides || detectionResult.ides.length === 0) {
+            addLogEntry(t('ui.progress.no_ides_detected'), 'error');
+            updateCurrentOperation(t('ui.progress.detection_failed'), t('ui.progress.no_ides_detected'), '❌');
+            updateOverallProgress(100);
+            setTimeout(() => {
+                hideProgress();
+                showMessage(t('ui.progress.no_ides_detected'), 'error');
+            }, 2000);
+            return;
+        }
+
+        const detectedIDEs = detectionResult.ides;
+        addLogEntry(t('ui.progress.detected_ides', { count: detectedIDEs.length }), 'success');
+        updateOverallProgress(20);
+
+        // Step 2: Add IDE progress items
+        updateCurrentOperation(t('ui.progress.preparing'), t('ui.progress.preparing_processing'), '⚙️');
+        detectedIDEs.forEach(ide => {
+            addIDEProgress(ide.display_name, ide.ide_type);
+        });
+        updateOverallProgress(40);
+
+        // Step 3: Process each IDE
+        updateCurrentOperation(t('ui.progress.processing_ides'), t('ui.progress.cleaning_databases'), '🗄️');
+        
+        for (let i = 0; i < detectedIDEs.length; i++) {
+            const ide = detectedIDEs[i];
+            const progress = 40 + (i / detectedIDEs.length) * 50;
+            
+            updateIDEProgress(ide.display_name, 'processing', t('ui.progress.cleaning_databases'));
+            updateOverallProgress(progress);
 
     try {
         const result = await pywebview.api.clean_database();
-        displayResults(t('ui.operations.database.title'), result);
+                
+                if (result.success && result.data && result.data.results) {
+                    const ideResult = result.data.results[ide.display_name];
+                    if (ideResult && ideResult.success) {
+                        const stats = {
+                            'rows_deleted': ideResult.data?.rows_deleted || 0,
+                            'backups_created': ideResult.data?.backups_created || 0
+                        };
+                        
+                        progressManager.statistics.totalRowsDeleted += stats.rows_deleted;
+                        progressManager.statistics.totalBackupsCreated += stats.backups_created;
+                        
+                        updateIDEProgress(ide.display_name, 'completed', t('ui.progress.database_clean_success'), stats);
+                    } else {
+                        updateIDEProgress(ide.display_name, 'error', ideResult?.message || t('ui.progress.clean_failed'));
+                    }
+                } else {
+                    updateIDEProgress(ide.display_name, 'error', result.message || t('ui.progress.operation_failed'));
+                }
+            } catch (error) {
+                updateIDEProgress(ide.display_name, 'error', error.message);
+            }
+        }
 
-        // Refresh system info after operation
+        updateOverallProgress(90);
+        updateCurrentOperation(t('ui.progress.completed'), t('ui.progress.database_clean_complete'), '✅');
+        addLogEntry(t('ui.progress.all_database_clean_complete'), 'success');
+
         setTimeout(() => {
-            loadSystemInfo();
-        }, 1000);
+            hideProgress();
+            showMessage(t('ui.progress.database_clean_finished'), 'success');
+        }, 2000);
+
     } catch (error) {
-        displayResults(t('ui.operations.database.title'), {
-            success: false,
-            error: error.message,
-            message: t('messages.error.database_failed')
-        });
-    } finally {
-        hideLoading();
+        addLogEntry(t('ui.progress.operation_error') + ': ' + error.message, 'error');
+        updateCurrentOperation(t('ui.progress.failed'), t('ui.progress.operation_error_occurred'), '❌');
+        setTimeout(() => {
+            hideProgress();
+            showMessage(t('ui.operations.database.title') + ' ' + t('ui.progress.failed') + ': ' + error.message, 'error');
+        }, 2000);
     }
 }
 
-// Clean workspace with preview
+// Clean workspace
 async function cleanWorkspace() {
     if (isOperationRunning || !checkAPIAvailable()) return;
 
-    // Show preview of what will be cleaned
-    await showOperationPreview('workspace');
+    showProgress(t('ui.operations.workspace.title'), 3, true);
+    updateCurrentOperation(t('ui.progress.detecting_ides'), t('ui.progress.detecting_ides_desc'), '🔍');
 
-    showLoading(t('ui.loading.cleaning'));
+    try {
+        // Step 1: Detect IDEs
+        addLogEntry(t('ui.progress.start_detecting'), 'info');
+        const detectionResult = await pywebview.api.detect_ides();
+
+        if (!detectionResult.success || !detectionResult.ides || detectionResult.ides.length === 0) {
+            addLogEntry(t('ui.progress.no_ides_detected'), 'error');
+            updateCurrentOperation(t('ui.progress.detection_failed'), t('ui.progress.no_ides_detected'), '❌');
+            updateOverallProgress(100);
+            setTimeout(() => {
+                hideProgress();
+                showMessage(t('ui.progress.no_ides_detected'), 'error');
+            }, 2000);
+            return;
+        }
+
+        const detectedIDEs = detectionResult.ides;
+        addLogEntry(t('ui.progress.detected_ides', { count: detectedIDEs.length }), 'success');
+        updateOverallProgress(20);
+
+        // Step 2: Add IDE progress items
+        updateCurrentOperation(t('ui.progress.preparing'), t('ui.progress.preparing_processing'), '⚙️');
+        detectedIDEs.forEach(ide => {
+            addIDEProgress(ide.display_name, ide.ide_type);
+        });
+        updateOverallProgress(40);
+
+        // Step 3: Process each IDE
+        updateCurrentOperation(t('ui.progress.processing_ides'), t('ui.progress.cleaning_workspaces'), '📁');
+        
+        for (let i = 0; i < detectedIDEs.length; i++) {
+            const ide = detectedIDEs[i];
+            const progress = 40 + (i / detectedIDEs.length) * 50;
+            
+            updateIDEProgress(ide.display_name, 'processing', t('ui.progress.cleaning_workspaces'));
+            updateOverallProgress(progress);
 
     try {
         const result = await pywebview.api.clean_workspace();
-        displayResults(t('ui.operations.workspace.title'), result);
+                
+                if (result.success && result.data && result.data.results) {
+                    const ideResult = result.data.results[ide.display_name];
+                    if (ideResult && ideResult.success) {
+                        const stats = {
+                            'files_deleted': ideResult.data?.files_deleted || 0,
+                            'backups_created': ideResult.data?.backups_created || 0
+                        };
+                        
+                        progressManager.statistics.totalFilesDeleted += stats.files_deleted;
+                        progressManager.statistics.totalBackupsCreated += stats.backups_created;
+                        
+                        updateIDEProgress(ide.display_name, 'completed', t('ui.progress.workspace_clean_success'), stats);
+                    } else {
+                        updateIDEProgress(ide.display_name, 'error', ideResult?.message || t('ui.progress.clean_failed'));
+                    }
+                } else {
+                    updateIDEProgress(ide.display_name, 'error', result.message || t('ui.progress.operation_failed'));
+                }
+            } catch (error) {
+                updateIDEProgress(ide.display_name, 'error', error.message);
+            }
+        }
 
-        // Refresh system info after operation
+        updateOverallProgress(90);
+        updateCurrentOperation(t('ui.progress.completed'), t('ui.progress.workspace_clean_complete'), '✅');
+        addLogEntry(t('ui.progress.all_workspace_clean_complete'), 'success');
+
         setTimeout(() => {
-            loadSystemInfo();
-        }, 1000);
+            hideProgress();
+            showMessage(t('ui.progress.workspace_clean_finished'), 'success');
+        }, 2000);
+
     } catch (error) {
-        displayResults(t('ui.operations.workspace.title'), {
-            success: false,
-            error: error.message,
-            message: t('messages.error.workspace_failed')
-        });
-    } finally {
-        hideLoading();
+        addLogEntry(t('ui.progress.operation_error') + ': ' + error.message, 'error');
+        updateCurrentOperation(t('ui.progress.failed'), t('ui.progress.operation_error_occurred'), '❌');
+        setTimeout(() => {
+            hideProgress();
+            showMessage(t('ui.operations.workspace.title') + ' ' + t('ui.progress.failed') + ': ' + error.message, 'error');
+        }, 2000);
     }
 }
 
-// Run all operations with preview
+// Run all operations with progress
 async function runAllOperations() {
     if (isOperationRunning || !checkAPIAvailable()) return;
 
-    showLoading(t('ui.loading.processing'));
+    showProgress(t('ui.operations.all.title'), 4, true);
+    updateCurrentOperation(t('ui.progress.detecting_ides'), t('ui.progress.detecting_ides_desc'), '🔍');
 
     try {
-        const result = await pywebview.api.run_all_operations();
-        displayAllResults(result);
+        // Step 1: Detect IDEs
+        addLogEntry(t('ui.progress.start_detecting'), 'info');
+        const detectionResult = await pywebview.api.detect_ides();
 
-        // Refresh system info after all operations
-        setTimeout(() => {
-            loadSystemInfo();
-            // Re-detect IDEs to update counts
-            autoDetectIDEsOnStartup();
-        }, 2000);
-    } catch (error) {
-        displayResults(t('ui.operations.all.title'), {
-            success: false,
-            error: error.message,
-            message: t('messages.error.some_operations_failed')
+        if (!detectionResult.success || !detectionResult.ides || detectionResult.ides.length === 0) {
+            addLogEntry(t('ui.progress.no_ides_detected'), 'error');
+            updateCurrentOperation(t('ui.progress.detection_failed'), t('ui.progress.no_ides_detected'), '❌');
+            updateOverallProgress(100);
+            setTimeout(() => {
+                hideProgress();
+                showMessage(t('ui.progress.no_ides_detected'), 'error');
+            }, 2000);
+            return;
+        }
+
+        const detectedIDEs = detectionResult.ides;
+        addLogEntry(t('ui.progress.detected_ides', { count: detectedIDEs.length }), 'success');
+        updateOverallProgress(15);
+
+        // Step 2: Add IDE progress items
+        updateCurrentOperation(t('ui.progress.preparing'), t('ui.progress.preparing_processing'), '⚙️');
+        detectedIDEs.forEach(ide => {
+            addIDEProgress(ide.display_name, ide.ide_type);
         });
-    } finally {
-        hideLoading();
+        updateOverallProgress(25);
+
+        // Step 3: Run all operations
+        updateCurrentOperation(t('ui.progress.executing_operations'), t('ui.progress.executing_all_operations'), '🚀');
+        
+        const result = await pywebview.api.run_all_operations();
+        
+        if (result.success && result.data && result.data.results) {
+            const operations = ['telemetry', 'database', 'workspace'];
+            
+            for (let i = 0; i < detectedIDEs.length; i++) {
+                const ide = detectedIDEs[i];
+                const progress = 25 + (i / detectedIDEs.length) * 60;
+                
+                updateIDEProgress(ide.display_name, 'processing', t('ui.progress.executing_all_operations'));
+                updateOverallProgress(progress);
+
+                // Check results for this IDE
+                const ideResults = result.data.results[ide.display_name];
+                if (ideResults) {
+                    let successCount = 0;
+                    let totalStats = {
+                        'files_deleted': 0,
+                        'rows_deleted': 0,
+                        'backups_created': 0,
+                        'storage_modified': t('ui.progress.status.no'),
+                        'machine_id_changed': t('ui.progress.status.no'),
+                        'device_id_changed': t('ui.progress.status.no')
+                    };
+
+                    operations.forEach(op => {
+                        if (ideResults[op] && ideResults[op].success) {
+                            successCount++;
+                            
+                            // Aggregate stats
+                            if (ideResults[op].data) {
+                                if (ideResults[op].data.files_deleted) {
+                                    totalStats.files_deleted += ideResults[op].data.files_deleted;
+                                }
+                                if (ideResults[op].data.rows_deleted) {
+                                    totalStats.rows_deleted += ideResults[op].data.rows_deleted;
+                                }
+                                if (ideResults[op].data.backups_created) {
+                                    totalStats.backups_created += ideResults[op].data.backups_created;
+                                }
+                                if (ideResults[op].data.old_machine_id && ideResults[op].data.new_machine_id) {
+                                    totalStats.machine_id_changed = t('ui.progress.status.yes');
+                                }
+                                if (ideResults[op].data.old_device_id && ideResults[op].data.new_device_id) {
+                                    totalStats.device_id_changed = t('ui.progress.status.yes');
+                                }
+                            }
+                        }
+                    });
+
+                    // Update global statistics
+                    progressManager.statistics.totalFilesDeleted += totalStats.files_deleted;
+                    progressManager.statistics.totalRowsDeleted += totalStats.rows_deleted;
+                    progressManager.statistics.totalBackupsCreated += totalStats.backups_created;
+
+                    if (successCount === operations.length) {
+                        updateIDEProgress(ide.display_name, 'completed', t('ui.progress.all_operations_success'), totalStats);
+                    } else if (successCount > 0) {
+                        updateIDEProgress(ide.display_name, 'completed', t('ui.progress.partial_operations_success', { success: successCount, total: operations.length }), totalStats);
+                    } else {
+                        updateIDEProgress(ide.display_name, 'error', t('ui.progress.all_operations_failed'));
+                    }
+                } else {
+                    updateIDEProgress(ide.display_name, 'error', t('ui.progress.no_operation_results'));
+                }
+            }
+        } else {
+            // Handle case where no per-IDE results
+            detectedIDEs.forEach(ide => {
+                updateIDEProgress(ide.display_name, 'error', result.message || t('ui.progress.operation_failed'));
+            });
+        }
+
+        updateOverallProgress(100);
+        updateCurrentOperation(t('ui.progress.completed'), t('ui.progress.all_operations_complete'), '✅');
+        addLogEntry(t('ui.progress.all_ide_operations_complete'), 'success');
+        addLogEntry(t('ui.progress.review_results_message'), 'info');
+
+        // Don't auto-close for "run all operations" - let user review the results
+        showMessage(t('ui.progress.all_operations_finished'), 'success');
+
+    } catch (error) {
+        addLogEntry(t('ui.progress.operation_error') + ': ' + error.message, 'error');
+        updateCurrentOperation(t('ui.progress.failed'), t('ui.progress.operation_error_occurred'), '❌');
+        updateOverallProgress(100);
+
+        // Don't auto-close on error - let user see what went wrong
+        showMessage(t('ui.operations.all.title') + ' ' + t('ui.progress.failed') + ': ' + error.message, 'error');
     }
 }
 
-// Full Automation Workflow
+// Full Automation Workflow with progress
 async function runFullAutomation() {
     if (isOperationRunning || !checkAPIAvailable()) return;
 
-    showLoading(t('ui.loading.processing'));
+    showProgress(t('ui.operations.automation.title'), 5, true);
+    updateCurrentOperation(t('ui.progress.detecting_ides'), t('ui.progress.detecting_ides_desc'), '🔍');
 
     try {
-        const result = await pywebview.api.run_full_automation();
-        displayAutomationResults(result);
+        // Step 1: Detect IDEs
+        addLogEntry(t('ui.progress.start_detecting'), 'info');
+        const detectionResult = await pywebview.api.detect_ides();
 
-        // Refresh system info after automation
-        setTimeout(() => {
-            loadSystemInfo();
-            autoDetectIDEsOnStartup();
-        }, 3000);
-    } catch (error) {
-        displayResults(t('ui.operations.automation.title'), {
-            success: false,
-            error: error.message,
-            message: t('messages.error.automation_failed')
+        if (!detectionResult.success || !detectionResult.ides || detectionResult.ides.length === 0) {
+            addLogEntry(t('ui.progress.no_ides_detected'), 'error');
+            updateCurrentOperation(t('ui.progress.detection_failed'), t('ui.progress.no_ides_detected'), '❌');
+            updateOverallProgress(100);
+            setTimeout(() => {
+                hideProgress();
+                showMessage(t('ui.progress.no_ides_detected'), 'error');
+            }, 2000);
+            return;
+        }
+
+        const detectedIDEs = detectionResult.ides;
+        addLogEntry(t('ui.progress.detected_ides', { count: detectedIDEs.length }), 'success');
+        updateOverallProgress(10);
+
+        // Step 2: Add IDE progress items
+        updateCurrentOperation(t('ui.progress.preparing'), t('ui.progress.preparing_processing'), '⚙️');
+        detectedIDEs.forEach(ide => {
+            addIDEProgress(ide.display_name, ide.ide_type);
         });
-    } finally {
-        hideLoading();
+        updateOverallProgress(20);
+
+        // Step 3: Run automation
+        updateCurrentOperation(t('ui.progress.executing_automation'), t('ui.progress.executing_full_automation'), '🤖');
+        
+        const result = await pywebview.api.run_full_automation();
+        
+        if (result.success && result.data && result.data.results) {
+            const automationSteps = ['signout', 'cleaning', 'signin', 'restart'];
+            
+            for (let i = 0; i < detectedIDEs.length; i++) {
+                const ide = detectedIDEs[i];
+                const progress = 20 + (i / detectedIDEs.length) * 70;
+                
+                updateIDEProgress(ide.display_name, 'processing', t('ui.progress.executing_automation_workflow'));
+                updateOverallProgress(progress);
+
+                // Check results for this IDE
+                const ideResults = result.data.results[ide.display_name];
+                if (ideResults) {
+                    let successCount = 0;
+                    let totalStats = {
+                        'processes_closed': 0,
+                        'files_deleted': 0,
+                        'rows_deleted': 0,
+                        'backups_created': 0,
+                        'storage_modified': t('ui.progress.status.no'),
+                        'machine_id_changed': t('ui.progress.status.no'),
+                        'device_id_changed': t('ui.progress.status.no')
+                    };
+
+                    // Check each automation step
+                    automationSteps.forEach(step => {
+                        if (ideResults[step] && ideResults[step].success) {
+                            successCount++;
+                            
+                            // Aggregate stats
+                            if (ideResults[step].data) {
+                                if (ideResults[step].data.closed_processes) {
+                                    totalStats.processes_closed += ideResults[step].data.closed_processes;
+                                }
+                                if (ideResults[step].data.files_deleted) {
+                                    totalStats.files_deleted += ideResults[step].data.files_deleted;
+                                }
+                                if (ideResults[step].data.rows_deleted) {
+                                    totalStats.rows_deleted += ideResults[step].data.rows_deleted;
+                                }
+                                if (ideResults[step].data.backups_created) {
+                                    totalStats.backups_created += ideResults[step].data.backups_created;
+                                }
+                                if (ideResults[step].data.old_machine_id && ideResults[step].data.new_machine_id) {
+                                    totalStats.machine_id_changed = t('ui.progress.status.yes');
+                                }
+                                if (ideResults[step].data.old_device_id && ideResults[step].data.new_device_id) {
+                                    totalStats.device_id_changed = t('ui.progress.status.yes');
+                                }
+                            }
+                        }
+                    });
+
+                    // Update global statistics
+                    progressManager.statistics.totalFilesDeleted += totalStats.files_deleted;
+                    progressManager.statistics.totalRowsDeleted += totalStats.rows_deleted;
+                    progressManager.statistics.totalBackupsCreated += totalStats.backups_created;
+
+                    if (successCount === automationSteps.length) {
+                        updateIDEProgress(ide.display_name, 'completed', t('ui.progress.automation_workflow_complete'), totalStats);
+                    } else if (successCount > 0) {
+                        updateIDEProgress(ide.display_name, 'completed', t('ui.progress.partial_automation_success', { success: successCount, total: automationSteps.length }), totalStats);
+                    } else {
+                        updateIDEProgress(ide.display_name, 'error', t('ui.progress.automation_workflow_failed'));
+                    }
+                } else {
+                    updateIDEProgress(ide.display_name, 'error', t('ui.progress.no_automation_results'));
+                }
+            }
+        } else {
+            // Handle case where no per-IDE results
+            detectedIDEs.forEach(ide => {
+                updateIDEProgress(ide.display_name, 'error', result.message || t('ui.progress.automation_failed'));
+            });
+        }
+
+        updateOverallProgress(100);
+        updateCurrentOperation(t('ui.progress.completed'), t('ui.progress.full_automation_complete'), '✅');
+        addLogEntry(t('ui.progress.all_automation_complete'), 'success');
+        addLogEntry(t('ui.progress.review_results_message'), 'info');
+
+        // Don't auto-close for full automation - let user review the results
+        showMessage(t('ui.progress.full_automation_finished'), 'success');
+
+    } catch (error) {
+        addLogEntry(t('ui.progress.automation_error') + ': ' + error.message, 'error');
+        updateCurrentOperation(t('ui.progress.failed'), t('ui.progress.automation_error_occurred'), '❌');
+        updateOverallProgress(100);
+
+        // Don't auto-close on error - let user see what went wrong
+        showMessage(t('ui.progress.full_automation_failed') + ': ' + error.message, 'error');
     }
 }
 
@@ -1215,7 +1680,7 @@ function hideAutomationOptionsModal() {
     }
 }
 
-// Run custom automation with options
+// Run custom automation with options and progress
 async function runCustomAutomation() {
     if (isOperationRunning || !checkAPIAvailable()) return;
 
@@ -1228,25 +1693,137 @@ async function runCustomAutomation() {
     };
 
     hideAutomationOptionsModal();
-    showLoading(t('ui.loading.processing'));
+    showProgress(t('ui.operations.automation.custom_title'), 5, true);
+    updateCurrentOperation(t('ui.progress.detecting_ides'), t('ui.progress.detecting_ides_desc'), '🔍');
 
     try {
-        const result = await pywebview.api.run_full_automation(options);
-        displayAutomationResults(result);
+        // Step 1: Detect IDEs
+        addLogEntry(t('ui.progress.start_detecting'), 'info');
+        const detectionResult = await pywebview.api.detect_ides();
 
-        // Refresh system info after automation
-        setTimeout(() => {
-            loadSystemInfo();
-            autoDetectIDEsOnStartup();
-        }, 3000);
-    } catch (error) {
-        displayResults(t('ui.operations.automation.title'), {
-            success: false,
-            error: error.message,
-            message: t('messages.error.automation_failed')
+        if (!detectionResult.success || !detectionResult.ides || detectionResult.ides.length === 0) {
+            addLogEntry(t('ui.progress.no_ides_detected'), 'error');
+            updateCurrentOperation(t('ui.progress.detection_failed'), t('ui.progress.no_ides_detected'), '❌');
+            updateOverallProgress(100);
+            setTimeout(() => {
+                hideProgress();
+                showMessage(t('ui.progress.no_ides_detected'), 'error');
+            }, 2000);
+            return;
+        }
+
+        const detectedIDEs = detectionResult.ides;
+        addLogEntry(t('ui.progress.detected_ides', { count: detectedIDEs.length }), 'success');
+        updateOverallProgress(10);
+
+        // Step 2: Add IDE progress items
+        updateCurrentOperation(t('ui.progress.preparing'), t('ui.progress.preparing_processing'), '⚙️');
+        detectedIDEs.forEach(ide => {
+            addIDEProgress(ide.display_name, ide.ide_type);
         });
-    } finally {
-        hideLoading();
+        updateOverallProgress(20);
+
+        // Step 3: Run automation with options
+        updateCurrentOperation(t('ui.progress.executing_automation'), t('ui.progress.executing_custom_automation'), '🤖');
+        addLogEntry(t('ui.progress.execution_options') + ': ' + JSON.stringify(options), 'info');
+        
+        const result = await pywebview.api.run_full_automation(options);
+        
+        if (result.success && result.data && result.data.results) {
+            const enabledSteps = [];
+            if (options.include_signout) enabledSteps.push('signout');
+            if (options.include_cleaning) enabledSteps.push('cleaning');
+            if (options.include_signin) enabledSteps.push('signin');
+            if (options.include_restart) enabledSteps.push('restart');
+            
+            for (let i = 0; i < detectedIDEs.length; i++) {
+                const ide = detectedIDEs[i];
+                const progress = 20 + (i / detectedIDEs.length) * 70;
+                
+                updateIDEProgress(ide.display_name, 'processing', t('ui.progress.executing_custom_automation_workflow'));
+                updateOverallProgress(progress);
+
+                // Check results for this IDE
+                const ideResults = result.data.results[ide.display_name];
+                if (ideResults) {
+                    let successCount = 0;
+                    let totalStats = {
+                        'processes_closed': 0,
+                        'files_deleted': 0,
+                        'rows_deleted': 0,
+                        'backups_created': 0,
+                        'storage_modified': t('ui.progress.status.no'),
+                        'machine_id_changed': t('ui.progress.status.no'),
+                        'device_id_changed': t('ui.progress.status.no')
+                    };
+
+                    // Check each enabled automation step
+                    enabledSteps.forEach(step => {
+                        if (ideResults[step] && ideResults[step].success) {
+                            successCount++;
+                            
+                            // Aggregate stats
+                            if (ideResults[step].data) {
+                                if (ideResults[step].data.closed_processes) {
+                                    totalStats.processes_closed += ideResults[step].data.closed_processes;
+                                }
+                                if (ideResults[step].data.files_deleted) {
+                                    totalStats.files_deleted += ideResults[step].data.files_deleted;
+                                }
+                                if (ideResults[step].data.rows_deleted) {
+                                    totalStats.rows_deleted += ideResults[step].data.rows_deleted;
+                                }
+                                if (ideResults[step].data.backups_created) {
+                                    totalStats.backups_created += ideResults[step].data.backups_created;
+                                }
+                                if (ideResults[step].data.old_machine_id && ideResults[step].data.new_machine_id) {
+                                    totalStats.machine_id_changed = t('ui.progress.status.yes');
+                                }
+                                if (ideResults[step].data.old_device_id && ideResults[step].data.new_device_id) {
+                                    totalStats.device_id_changed = t('ui.progress.status.yes');
+                                }
+                            }
+                        }
+                    });
+
+                    // Update global statistics
+                    progressManager.statistics.totalFilesDeleted += totalStats.files_deleted;
+                    progressManager.statistics.totalRowsDeleted += totalStats.rows_deleted;
+                    progressManager.statistics.totalBackupsCreated += totalStats.backups_created;
+
+                    if (successCount === enabledSteps.length) {
+                        updateIDEProgress(ide.display_name, 'completed', t('ui.progress.custom_automation_complete'), totalStats);
+                    } else if (successCount > 0) {
+                        updateIDEProgress(ide.display_name, 'completed', t('ui.progress.partial_automation_success', { success: successCount, total: enabledSteps.length }), totalStats);
+                    } else {
+                        updateIDEProgress(ide.display_name, 'error', t('ui.progress.custom_automation_failed'));
+                    }
+                } else {
+                    updateIDEProgress(ide.display_name, 'error', t('ui.progress.no_automation_results'));
+                }
+            }
+        } else {
+            // Handle case where no per-IDE results
+            detectedIDEs.forEach(ide => {
+                updateIDEProgress(ide.display_name, 'error', result.message || t('ui.progress.automation_failed'));
+            });
+        }
+
+        updateOverallProgress(100);
+        updateCurrentOperation(t('ui.progress.completed'), t('ui.progress.custom_automation_complete'), '✅');
+        addLogEntry(t('ui.progress.all_custom_automation_complete'), 'success');
+        addLogEntry(t('ui.progress.review_results_message'), 'info');
+
+        // Don't auto-close for custom automation - let user review the results
+        showMessage(t('ui.progress.custom_automation_finished'), 'success');
+
+    } catch (error) {
+        addLogEntry(t('ui.progress.custom_automation_error') + ': ' + error.message, 'error');
+        updateCurrentOperation(t('ui.progress.failed'), t('ui.progress.automation_error_occurred'), '❌');
+        updateOverallProgress(100);
+
+        // Don't auto-close on error - let user see what went wrong
+        showMessage(t('ui.progress.custom_automation_failed') + ': ' + error.message, 'error');
     }
 }
 
@@ -1270,7 +1847,7 @@ function displayAutomationResults(result) {
             <div class="automation-header">
                 <h3>🤖 ${t('ui.operations.automation.title')} - ${ideName}</h3>
                 <p class="automation-status ${result.success ? 'success' : 'error'}">
-                    ${result.success ? '✅ 完成' : '❌ 部分失败'}
+                    ${result.success ? '✅ ' + t('ui.progress.completed') : '❌ ' + t('ui.progress.partial_failed')}
                 </p>
             </div>
             <div class="automation-steps-results">
@@ -1285,7 +1862,7 @@ function displayAutomationResults(result) {
                 <div class="step-content">
                     <h4>${t('ui.operations.automation.signout_step')}</h4>
                     <p>${step.message}</p>
-                    ${step.closed_processes ? `<small>关闭了 ${step.closed_processes} 个进程</small>` : ''}
+                    ${step.closed_processes ? `<small>${t('ui.automation.closed_processes', { count: step.closed_processes })}</small>` : ''}
                 </div>
             </div>
         `;
@@ -1305,21 +1882,21 @@ function displayAutomationResults(result) {
         if (cleaning.telemetry) {
             const tel = cleaning.telemetry;
             content += `<p class="${tel.success ? 'success' : 'error'}">
-                ${tel.success ? '✅' : '❌'} 遥测数据: ${tel.message}
+                ${tel.success ? '✅' : '❌'} ${t('ui.operations.telemetry.title')}: ${tel.message}
             </p>`;
         }
 
         if (cleaning.database) {
             const db = cleaning.database;
             content += `<p class="${db.success ? 'success' : 'error'}">
-                ${db.success ? '✅' : '❌'} 数据库: ${db.message}
+                ${db.success ? '✅' : '❌'} ${t('ui.operations.database.title')}: ${db.message}
             </p>`;
         }
 
         if (cleaning.workspace) {
             const ws = cleaning.workspace;
             content += `<p class="${ws.success ? 'success' : 'error'}">
-                ${ws.success ? '✅' : '❌'} 工作区: ${ws.message}
+                ${ws.success ? '✅' : '❌'} ${t('ui.operations.workspace.title')}: ${ws.message}
             </p>`;
         }
 
@@ -1340,7 +1917,7 @@ function displayAutomationResults(result) {
                     <p>${step.message}</p>
                     ${step.instructions ? `
                         <div class="signin-instructions">
-                            <h5>下一步操作:</h5>
+                            <h5>${t('ui.automation.next_steps')}:</h5>
                             <ul>
                                 ${step.instructions.map(instruction => `<li>${instruction}</li>`).join('')}
                             </ul>
@@ -1374,7 +1951,7 @@ function displayAutomationResults(result) {
     if (data.errors && data.errors.length > 0) {
         content += `
             <div class="automation-errors">
-                <h4>⚠️ 错误详情:</h4>
+                <h4>⚠️ ${t('ui.automation.error_details')}:</h4>
                 <ul>
                     ${data.errors.map(error => `<li>${error}</li>`).join('')}
                 </ul>
@@ -1388,8 +1965,6 @@ function displayAutomationResults(result) {
         customContent: content
     });
 }
-
-
 
 // Display operation results
 function displayResults(operationName, result) {
@@ -1460,21 +2035,21 @@ function formatResultData(data) {
 
     if (data.old_machine_id && data.new_machine_id) {
         formatted += `
-            <p><strong>旧机器 ID:</strong> ${data.old_machine_id.substring(0, 16)}...</p>
-            <p><strong>新机器 ID:</strong> ${data.new_machine_id.substring(0, 16)}...</p>
+            <p><strong>${t('ui.results.old_machine_id')}:</strong> ${data.old_machine_id.substring(0, 16)}...</p>
+            <p><strong>${t('ui.results.new_machine_id')}:</strong> ${data.new_machine_id.substring(0, 16)}...</p>
         `;
     }
 
     if (data.deleted_rows !== undefined) {
-        formatted += `<p><strong>删除记录数:</strong> ${data.deleted_rows}</p>`;
+        formatted += `<p><strong>${t('ui.results.deleted_rows')}:</strong> ${data.deleted_rows}</p>`;
     }
 
     if (data.deleted_files_count !== undefined) {
-        formatted += `<p><strong>删除文件数:</strong> ${data.deleted_files_count}</p>`;
+        formatted += `<p><strong>${t('ui.results.deleted_files')}:</strong> ${data.deleted_files_count}</p>`;
     }
 
     if (data.storage_backup_path) {
-        formatted += `<p><strong>备份位置:</strong> ${data.storage_backup_path}</p>`;
+        formatted += `<p><strong>${t('ui.results.backup_location')}:</strong> ${data.storage_backup_path}</p>`;
     }
 
     return formatted;
@@ -1763,11 +2338,11 @@ function getOperationFunction(operationId) {
 // Get operation button text
 function getOperationButtonText(operationId) {
     const textMap = {
-        'telemetry': '重置机器码',
-        'database': '清理数据库',
-        'workspace': '清理工作区'
+        'telemetry': t('ui.operations.telemetry.button'),
+        'database': t('ui.operations.database.button'),
+        'workspace': t('ui.operations.workspace.button')
     };
-    return textMap[operationId] || '执行操作';
+    return textMap[operationId] || t('ui.operations.default.button');
 }
 
 // Close modal when clicking outside
@@ -1784,3 +2359,264 @@ document.addEventListener('keydown', function(event) {
         hideAboutModal();
     }
 });
+
+// Initialize progress elements
+function initializeProgressElements() {
+    elements.progressOverlay = document.getElementById('progressOverlay');
+    elements.progressTitle = document.getElementById('progressTitle');
+    elements.overallProgressBar = document.getElementById('overallProgressBar');
+    elements.overallProgressFill = document.getElementById('overallProgressFill');
+    elements.overallProgressText = document.getElementById('overallProgressText');
+    elements.currentOperation = document.getElementById('currentOperation');
+    elements.currentOperationName = document.getElementById('currentOperationName');
+    elements.currentOperationStatus = document.getElementById('currentOperationStatus');
+    elements.ideProgressSection = document.getElementById('ideProgressSection');
+    elements.ideProgressList = document.getElementById('ideProgressList');
+    elements.progressLog = document.getElementById('progressLog');
+    elements.statisticsSection = document.getElementById('statisticsSection');
+    elements.statisticsGrid = document.getElementById('statisticsGrid');
+    elements.progressTime = document.getElementById('progressTime');
+    elements.cancelButton = document.getElementById('cancelButton');
+}
+
+// Show detailed progress panel
+function showProgress(title, totalSteps = 1, showCancel = false) {
+    progressManager.isActive = true;
+    progressManager.startTime = Date.now();
+    progressManager.totalSteps = totalSteps;
+    progressManager.currentStep = 0;
+    progressManager.ideProgress = {};
+    progressManager.statistics = {
+        totalIDEs: 0,
+        processedIDEs: 0,
+        successfulIDEs: 0,
+        failedIDEs: 0,
+        totalFilesDeleted: 0,
+        totalRowsDeleted: 0,
+        totalBackupsCreated: 0
+    };
+    progressManager.logEntries = [];
+
+    elements.progressTitle.textContent = title;
+    elements.progressOverlay.style.display = 'flex';
+    elements.cancelButton.style.display = showCancel ? 'block' : 'none';
+    elements.cancelButton.textContent = t('ui.progress.cancel_operation');
+    
+    updateOverallProgress(0);
+    addLogEntry(t('ui.progress.start_operation', { title: title }), 'info');
+    startProgressTimer();
+    setButtonsDisabled(true);
+    isOperationRunning = true;
+}
+
+// Hide progress panel
+function hideProgress() {
+    progressManager.isActive = false;
+    elements.progressOverlay.style.display = 'none';
+    stopProgressTimer();
+    setButtonsDisabled(false);
+    isOperationRunning = false;
+}
+
+// Update overall progress
+function updateOverallProgress(percentage) {
+    const clampedPercentage = Math.max(0, Math.min(100, percentage));
+    elements.overallProgressFill.style.width = clampedPercentage + '%';
+    elements.overallProgressText.textContent = Math.round(clampedPercentage) + '%';
+    progressManager.currentStep = Math.round((clampedPercentage / 100) * progressManager.totalSteps);
+}
+
+// Update current operation
+function updateCurrentOperation(name, status, icon = '🔄') {
+    elements.currentOperationName.textContent = name;
+    elements.currentOperationStatus.textContent = status;
+    elements.currentOperation.querySelector('.operation-icon').textContent = icon;
+    progressManager.currentOperation = { name, status, icon };
+}
+
+// Add IDE progress item
+function addIDEProgress(ideName, ideType = 'vscode') {
+    const ideId = ideName.replace(/\s+/g, '_').toLowerCase();
+    progressManager.ideProgress[ideId] = {
+        name: ideName,
+        type: ideType,
+        status: 'pending',
+        stats: {}
+    };
+
+    const ideItem = document.createElement('div');
+    ideItem.className = 'ide-progress-item';
+    ideItem.id = `ide-${ideId}`;
+    ideItem.innerHTML = `
+        <div class="ide-progress-icon">⏳</div>
+        <div class="ide-progress-details">
+            <div class="ide-progress-name">${ideName}</div>
+            <div class="ide-progress-status">${t('ui.progress.status.pending')}</div>
+            <div class="ide-progress-stats"></div>
+        </div>
+    `;
+
+    elements.ideProgressList.appendChild(ideItem);
+    elements.ideProgressSection.style.display = 'block';
+    progressManager.statistics.totalIDEs++;
+    updateStatistics();
+}
+
+// Update IDE progress
+function updateIDEProgress(ideName, status, details = '', stats = {}) {
+    const ideId = ideName.replace(/\s+/g, '_').toLowerCase();
+    const ideItem = document.getElementById(`ide-${ideId}`);
+    
+    if (!ideItem) return;
+
+    const iconElement = ideItem.querySelector('.ide-progress-icon');
+    const statusElement = ideItem.querySelector('.ide-progress-status');
+    const statsElement = ideItem.querySelector('.ide-progress-stats');
+
+    // Update status
+    ideItem.className = `ide-progress-item ${status}`;
+    statusElement.textContent = details || getStatusText(status);
+
+    // Update icon
+    switch (status) {
+        case 'processing':
+            iconElement.textContent = '🔄';
+            iconElement.className = 'ide-progress-icon processing';
+            break;
+        case 'completed':
+            iconElement.textContent = '✅';
+            iconElement.className = 'ide-progress-icon completed';
+            progressManager.statistics.successfulIDEs++;
+            break;
+        case 'error':
+            iconElement.textContent = '❌';
+            iconElement.className = 'ide-progress-icon error';
+            progressManager.statistics.failedIDEs++;
+            break;
+        default:
+            iconElement.textContent = '⏳';
+            iconElement.className = 'ide-progress-icon';
+    }
+
+    // Update stats
+    if (Object.keys(stats).length > 0) {
+        progressManager.ideProgress[ideId].stats = stats;
+        statsElement.innerHTML = Object.entries(stats).map(([key, value]) => 
+            `<span>${getStatLabel(key)}: ${value}</span>`
+        ).join('');
+    }
+
+    progressManager.statistics.processedIDEs++;
+    updateStatistics();
+    addLogEntry(`${ideName}: ${details || getStatusText(status)}`, status === 'error' ? 'error' : 'success');
+}
+
+// Get status text
+function getStatusText(status) {
+    const statusKey = `ui.progress.status.${status}`;
+    return t(statusKey);
+}
+
+// Get stat label
+function getStatLabel(key) {
+    const statKey = `ui.progress.stats.${key}`;
+    return t(statKey);
+}
+
+// Add log entry
+function addLogEntry(message, type = 'info') {
+    const now = new Date();
+    const time = now.toLocaleTimeString();
+    const logEntry = {
+        time,
+        message,
+        type
+    };
+
+    progressManager.logEntries.push(logEntry);
+
+    const logElement = document.createElement('div');
+    logElement.className = `log-entry ${type}`;
+    logElement.innerHTML = `
+        <span class="log-time">${time}</span>
+        <span class="log-message">${message}</span>
+    `;
+
+    elements.progressLog.appendChild(logElement);
+    elements.progressLog.scrollTop = elements.progressLog.scrollHeight;
+
+    // Keep only last 50 entries
+    if (progressManager.logEntries.length > 50) {
+        progressManager.logEntries.shift();
+        if (elements.progressLog.firstChild) {
+            elements.progressLog.removeChild(elements.progressLog.firstChild);
+        }
+    }
+}
+
+// Update statistics
+function updateStatistics() {
+    const stats = progressManager.statistics;
+    
+    elements.statisticsGrid.innerHTML = `
+        <div class="stat-item">
+            <div class="stat-value">${stats.totalIDEs}</div>
+            <div class="stat-label">${t('ui.progress.stats.total_ides')}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">${stats.processedIDEs}</div>
+            <div class="stat-label">${t('ui.progress.stats.processed')}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">${stats.successfulIDEs}</div>
+            <div class="stat-label">${t('ui.progress.stats.successful')}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">${stats.failedIDEs}</div>
+            <div class="stat-label">${t('ui.progress.stats.failed')}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">${stats.totalFilesDeleted}</div>
+            <div class="stat-label">${t('ui.progress.stats.files_deleted')}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">${stats.totalRowsDeleted}</div>
+            <div class="stat-label">${t('ui.progress.stats.rows_deleted')}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">${stats.totalBackupsCreated}</div>
+            <div class="stat-label">${t('ui.progress.stats.backups_created')}</div>
+        </div>
+    `;
+
+    elements.statisticsSection.style.display = 'block';
+}
+
+// Start progress timer
+function startProgressTimer() {
+    progressManager.timer = setInterval(() => {
+        if (progressManager.isActive && progressManager.startTime) {
+            const elapsed = Math.floor((Date.now() - progressManager.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            elements.progressTime.textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }, 1000);
+}
+
+// Stop progress timer
+function stopProgressTimer() {
+    if (progressManager.timer) {
+        clearInterval(progressManager.timer);
+        progressManager.timer = null;
+    }
+}
+
+// Cancel operation
+function cancelOperation() {
+    if (confirm(t('ui.progress.cancel_operation'))) {
+        addLogEntry(t('ui.progress.user_cancelled'), 'warning');
+        hideProgress();
+    }
+}

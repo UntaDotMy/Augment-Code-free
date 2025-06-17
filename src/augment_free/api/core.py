@@ -134,52 +134,113 @@ class AugmentFreeAPI:
 
     def modify_telemetry(self) -> Dict[str, Any]:
         """
-        Modify telemetry IDs based on IDE type.
+        Modify telemetry IDs for all detected IDEs.
 
         Returns:
-            dict: Operation result with backup information and new IDs
+            dict: Operation result with backup information and new IDs for all IDEs
         """
         try:
-            # Determine IDE type
-            ide_type = "vscode"  # Default
-            if self.current_ide_info:
-                ide_type = self.current_ide_info.get("ide_type", "vscode")
+            # Ensure system information is available
+            if not self.ensure_system_info_available():
+                return {
+                    "success": False,
+                    "error": "System information not available",
+                    "message": "Unable to detect IDE configuration. Please ensure the IDE is properly installed."
+                }
 
-            if ide_type == "jetbrains":
-                # Handle JetBrains IDE
-                jetbrains_config = get_jetbrains_config_dir()
-                if not jetbrains_config:
-                    return {
+            results = {
+                "overall_success": True,
+                "processed_ides": [],
+                "errors": [],
+                "results": {}
+            }
+
+            # Get all detected IDEs
+            detection_result = self.detect_ides()
+            if not detection_result["success"] or not detection_result.get("ides"):
+                return {
+                    "success": False,
+                    "error": "No IDEs detected",
+                    "message": "Unable to detect any IDEs on the system"
+                }
+
+            detected_ides = detection_result["ides"]
+            results["processed_ides"] = [ide["display_name"] for ide in detected_ides]
+
+            # Process each detected IDE
+            for ide in detected_ides:
+                # Validate IDE information
+                if not ide or not isinstance(ide, dict):
+                    results["errors"].append(f"Invalid IDE information for {ide.get('display_name', 'Unknown IDE')}")
+                    continue
+
+                ide_name = ide.get("display_name", "Unknown IDE")
+                ide_type = ide.get("ide_type", "vscode")
+
+                try:
+                    if ide_type == "jetbrains":
+                        # Handle JetBrains IDE
+                        jetbrains_config = ide.get("jetbrains_config_path")
+                        if not jetbrains_config:
+                            jetbrains_config = get_jetbrains_config_dir()
+                        
+                        if not jetbrains_config:
+                            results["errors"].append(f"{ide_name}: JetBrains config directory not found")
+                            continue
+
+                        result = modify_jetbrains_ids(jetbrains_config)
+                        results["results"][ide_name] = {
+                            "success": result["success"],
+                            "data": result.get("data", {}),
+                            "message": result.get("message", "JetBrains ID处理完成")
+                        }
+                        
+                        if not result["success"]:
+                            results["overall_success"] = False
+                            results["errors"].append(f"{ide_name}: {result.get('error', 'Unknown error')}")
+                    else:
+                        # Handle VSCode series
+                        storage_path = ide.get("storage_path")
+                        machine_id_path = ide.get("machine_id_path")
+                        editor_type = ide.get("name", ide.get("editor_type", "VSCodium"))
+
+                        # If no verified paths, try to detect them
+                        if not storage_path:
+                            storage_path = get_storage_path(editor_type)
+                            # Check if the path actually exists
+                            if not os.path.exists(storage_path):
+                                results["errors"].append(f"{ide_name}: Storage file not found at {storage_path}")
+                                continue
+
+                        if not machine_id_path:
+                            machine_id_path = get_machine_id_path(editor_type)
+
+                        result = modify_telemetry_ids(
+                            editor_type=editor_type,
+                            storage_path=storage_path,
+                            machine_id_path=machine_id_path
+                        )
+                        results["results"][ide_name] = {
+                            "success": True,
+                            "data": result,
+                            "message": "Telemetry IDs modified successfully"
+                        }
+
+                except Exception as e:
+                    results["errors"].append(f"{ide_name}: {str(e)}")
+                    results["overall_success"] = False
+                    results["results"][ide_name] = {
                         "success": False,
-                        "error": "JetBrains配置目录未找到",
-                        "message": "无法找到JetBrains配置目录"
+                        "error": str(e),
+                        "message": "Failed to modify telemetry IDs"
                     }
 
-                result = modify_jetbrains_ids(jetbrains_config)
-                return {
-                    "success": result["success"],
-                    "data": result.get("data", {}),
-                    "message": result.get("message", "JetBrains ID处理完成")
-                }
-            else:
-                # Handle VSCode series - use verified paths if available
-                storage_path = None
-                machine_id_path = None
+            return {
+                "success": results["overall_success"],
+                "data": results,
+                "message": f"Telemetry modification completed for {len(results['processed_ides'])} IDE(s)" if results["overall_success"] else f"Telemetry modification completed with {len(results['errors'])} error(s)"
+            }
 
-                if self.current_ide_info:
-                    storage_path = self.current_ide_info.get("storage_path")
-                    machine_id_path = self.current_ide_info.get("machine_id_path")
-
-                result = modify_telemetry_ids(
-                    editor_type=self.editor_type,
-                    storage_path=storage_path,
-                    machine_id_path=machine_id_path
-                )
-                return {
-                    "success": True,
-                    "data": result,
-                    "message": "Telemetry IDs modified successfully"
-                }
         except Exception as e:
             return {
                 "success": False,
@@ -190,26 +251,100 @@ class AugmentFreeAPI:
 
     def clean_database(self) -> Dict[str, Any]:
         """
-        Clean augment data from SQLite database.
+        Clean augment data from SQLite database for all detected VSCode-based IDEs.
 
         Returns:
-            dict: Operation result with backup information and deletion count
+            dict: Operation result with backup information and deletion count for all IDEs
         """
         try:
-            # Use verified path if available
-            db_path = None
-            if self.current_ide_info:
-                db_path = self.current_ide_info.get("db_path")
+            # Ensure system information is available
+            if not self.ensure_system_info_available():
+                return {
+                    "success": False,
+                    "error": "System information not available",
+                    "message": "Unable to detect IDE configuration. Please ensure the IDE is properly installed."
+                }
 
-            result = clean_augment_data(
-                editor_type=self.editor_type,
-                db_path=db_path
-            )
-            return {
-                "success": True,
-                "data": result,
-                "message": f"Database cleaned successfully. Deleted {result['deleted_rows']} rows."
+            results = {
+                "overall_success": True,
+                "processed_ides": [],
+                "errors": [],
+                "results": {}
             }
+
+            # Get all detected IDEs
+            detection_result = self.detect_ides()
+            if not detection_result["success"] or not detection_result.get("ides"):
+                return {
+                    "success": False,
+                    "error": "No IDEs detected",
+                    "message": "Unable to detect any IDEs on the system"
+                }
+
+            detected_ides = detection_result["ides"]
+            vscode_ides = [ide for ide in detected_ides if ide.get("ide_type") == "vscode"]
+            
+            if not vscode_ides:
+                return {
+                    "success": True,
+                    "data": {
+                        "overall_success": True,
+                        "processed_ides": [],
+                        "errors": [],
+                        "results": {},
+                        "message": "No VSCode-based IDEs found (database cleaning not applicable for JetBrains IDEs)"
+                    },
+                    "message": "No VSCode-based IDEs found for database cleaning"
+                }
+
+            results["processed_ides"] = [ide["display_name"] for ide in vscode_ides]
+
+            # Process each VSCode-based IDE
+            for ide in vscode_ides:
+                # Validate IDE information
+                if not ide or not isinstance(ide, dict):
+                    results["errors"].append(f"Invalid IDE information for {ide.get('display_name', 'Unknown IDE')}")
+                    continue
+
+                ide_name = ide.get("display_name", "Unknown IDE")
+                db_path = ide.get("db_path")
+                editor_type = ide.get("name", ide.get("editor_type", "VSCodium"))
+
+                try:
+                    # If no verified path, try to detect it
+                    if not db_path:
+                        db_path = get_db_path(editor_type)
+                        
+                        # Check if the path actually exists
+                        if not os.path.exists(db_path):
+                            results["errors"].append(f"{ide_name}: Database file not found at {db_path}")
+                            continue
+
+                    result = clean_augment_data(
+                        editor_type=editor_type,
+                        db_path=db_path
+                    )
+                    results["results"][ide_name] = {
+                        "success": True,
+                        "data": result,
+                        "message": f"Database cleaned successfully. Deleted {result['deleted_rows']} rows."
+                    }
+
+                except Exception as e:
+                    results["errors"].append(f"{ide_name}: {str(e)}")
+                    results["overall_success"] = False
+                    results["results"][ide_name] = {
+                        "success": False,
+                        "error": str(e),
+                        "message": "Failed to clean database"
+                    }
+
+            return {
+                "success": results["overall_success"],
+                "data": results,
+                "message": f"Database cleaning completed for {len(results['processed_ides'])} IDE(s)" if results["overall_success"] else f"Database cleaning completed with {len(results['errors'])} error(s)"
+            }
+
         except Exception as e:
             return {
                 "success": False,
@@ -220,26 +355,100 @@ class AugmentFreeAPI:
 
     def clean_workspace(self) -> Dict[str, Any]:
         """
-        Clean workspace storage.
+        Clean workspace storage for all detected VSCode-based IDEs.
 
         Returns:
-            dict: Operation result with backup information and deletion count
+            dict: Operation result with backup information and deletion count for all IDEs
         """
         try:
-            # Use verified path if available
-            workspace_storage_path = None
-            if self.current_ide_info:
-                workspace_storage_path = self.current_ide_info.get("workspace_storage_path")
+            # Ensure system information is available
+            if not self.ensure_system_info_available():
+                return {
+                    "success": False,
+                    "error": "System information not available",
+                    "message": "Unable to detect IDE configuration. Please ensure the IDE is properly installed."
+                }
 
-            result = clean_workspace_storage(
-                editor_type=self.editor_type,
-                workspace_storage_path=workspace_storage_path
-            )
-            return {
-                "success": True,
-                "data": result,
-                "message": f"Workspace cleaned successfully. Deleted {result['deleted_files_count']} files."
+            results = {
+                "overall_success": True,
+                "processed_ides": [],
+                "errors": [],
+                "results": {}
             }
+
+            # Get all detected IDEs
+            detection_result = self.detect_ides()
+            if not detection_result["success"] or not detection_result.get("ides"):
+                return {
+                    "success": False,
+                    "error": "No IDEs detected",
+                    "message": "Unable to detect any IDEs on the system"
+                }
+
+            detected_ides = detection_result["ides"]
+            vscode_ides = [ide for ide in detected_ides if ide.get("ide_type") == "vscode"]
+            
+            if not vscode_ides:
+                return {
+                    "success": True,
+                    "data": {
+                        "overall_success": True,
+                        "processed_ides": [],
+                        "errors": [],
+                        "results": {},
+                        "message": "No VSCode-based IDEs found (workspace cleaning not applicable for JetBrains IDEs)"
+                    },
+                    "message": "No VSCode-based IDEs found for workspace cleaning"
+                }
+
+            results["processed_ides"] = [ide["display_name"] for ide in vscode_ides]
+
+            # Process each VSCode-based IDE
+            for ide in vscode_ides:
+                # Validate IDE information
+                if not ide or not isinstance(ide, dict):
+                    results["errors"].append(f"Invalid IDE information for {ide.get('display_name', 'Unknown IDE')}")
+                    continue
+
+                ide_name = ide.get("display_name", "Unknown IDE")
+                workspace_storage_path = ide.get("workspace_storage_path")
+                editor_type = ide.get("name", ide.get("editor_type", "VSCodium"))
+
+                try:
+                    # If no verified path, try to detect it
+                    if not workspace_storage_path:
+                        workspace_storage_path = get_workspace_storage_path(editor_type)
+                        
+                        # Check if the path actually exists
+                        if not os.path.exists(workspace_storage_path):
+                            results["errors"].append(f"{ide_name}: Workspace storage directory not found at {workspace_storage_path}")
+                            continue
+
+                    result = clean_workspace_storage(
+                        editor_type=editor_type,
+                        workspace_storage_path=workspace_storage_path
+                    )
+                    results["results"][ide_name] = {
+                        "success": True,
+                        "data": result,
+                        "message": f"Workspace cleaned successfully. Deleted {result['deleted_files_count']} files."
+                    }
+
+                except Exception as e:
+                    results["errors"].append(f"{ide_name}: {str(e)}")
+                    results["overall_success"] = False
+                    results["results"][ide_name] = {
+                        "success": False,
+                        "error": str(e),
+                        "message": "Failed to clean workspace"
+                    }
+
+            return {
+                "success": results["overall_success"],
+                "data": results,
+                "message": f"Workspace cleaning completed for {len(results['processed_ides'])} IDE(s)" if results["overall_success"] else f"Workspace cleaning completed with {len(results['errors'])} error(s)"
+            }
+
         except Exception as e:
             return {
                 "success": False,
@@ -250,88 +459,73 @@ class AugmentFreeAPI:
 
     def run_all_operations(self) -> Dict[str, Any]:
         """
-        Run all cleaning operations in sequence based on IDE type.
-        If multiple IDEs are detected, run operations for all of them.
+        Run all cleaning operations in sequence for all detected IDEs.
+        This method orchestrates the individual operations that now handle all IDEs.
 
         Returns:
             dict: Combined results from all operations
         """
-        # Determine IDE type
-        ide_type = "vscode"  # Default
-        if self.current_ide_info:
-            ide_type = self.current_ide_info.get("ide_type", "vscode")
-
-        results = {
-            "telemetry": None,
-            "overall_success": True,
-            "errors": [],
-            "ide_type": ide_type,
-            "processed_ides": []
-        }
-
-        # Get all detected IDEs for comprehensive cleanup
         try:
-            detection_result = self.detect_ides()
-            if detection_result["success"] and detection_result.get("ides"):
-                detected_ides = detection_result["ides"]
-                results["processed_ides"] = [ide["display_name"] for ide in detected_ides]
+            # Ensure system information is available
+            if not self.ensure_system_info_available():
+                return {
+                    "success": False,
+                    "error": "System information not available",
+                    "message": "Unable to detect IDE configuration. Please ensure the IDE is properly installed."
+                }
 
-                # Process each detected IDE
-                for ide in detected_ides:
-                    # Temporarily set the IDE info for processing
-                    original_editor = self.editor_type
-                    original_ide_info = self.current_ide_info
+            results = {
+                "overall_success": True,
+                "errors": [],
+                "steps": {}
+            }
 
-                    self.editor_type = ide["name"]
-                    self.current_ide_info = ide
+            # Step 1: Modify telemetry IDs for all IDEs
+            print("🔄 Step 1/3: Modifying telemetry IDs for all IDEs...")
+            telemetry_result = self.modify_telemetry()
+            results["steps"]["telemetry"] = telemetry_result
+            if not telemetry_result["success"]:
+                results["overall_success"] = False
+                results["errors"].append(f"Telemetry: {telemetry_result.get('error', 'Unknown error')}")
 
-                    # Run operations for this IDE
-                    if ide["ide_type"] == "vscode":
-                        # VSCode series: clean database and workspace
-                        try:
-                            db_result = self.clean_database()
-                            ws_result = self.clean_workspace()
-                        except Exception as e:
-                            results["errors"].append(f"{ide['display_name']}: {str(e)}")
-
-                    # Restore original settings
-                    self.editor_type = original_editor
-                    self.current_ide_info = original_ide_info
-            else:
-                results["processed_ides"] = [self.current_ide_info.get("display_name", self.editor_type) if self.current_ide_info else self.editor_type]
-        except Exception as e:
-            results["errors"].append(f"IDE detection failed: {str(e)}")
-
-        # Always modify telemetry IDs (works for both VSCode and JetBrains)
-        telemetry_result = self.modify_telemetry()
-        results["telemetry"] = telemetry_result
-        if not telemetry_result["success"]:
-            results["overall_success"] = False
-            results["errors"].append(f"Telemetry: {telemetry_result.get('error', 'Unknown error')}")
-
-        if ide_type == "vscode":
-            # VSCode series: also clean database and workspace
+            # Step 2: Clean database for all VSCode-based IDEs
+            print("🔄 Step 2/3: Cleaning databases for all VSCode-based IDEs...")
             database_result = self.clean_database()
-            results["database"] = database_result
+            results["steps"]["database"] = database_result
             if not database_result["success"]:
                 results["overall_success"] = False
                 results["errors"].append(f"Database: {database_result.get('error', 'Unknown error')}")
 
+            # Step 3: Clean workspace for all VSCode-based IDEs
+            print("🔄 Step 3/3: Cleaning workspaces for all VSCode-based IDEs...")
             workspace_result = self.clean_workspace()
-            results["workspace"] = workspace_result
+            results["steps"]["workspace"] = workspace_result
             if not workspace_result["success"]:
                 results["overall_success"] = False
                 results["errors"].append(f"Workspace: {workspace_result.get('error', 'Unknown error')}")
-        else:
-            # JetBrains: only telemetry modification is needed
-            results["database"] = {"success": True, "message": t("messages.info.jetbrains_not_applicable")}
-            results["workspace"] = {"success": True, "message": t("messages.info.jetbrains_not_applicable")}
 
-        return {
-            "success": results["overall_success"],
-            "data": results,
-            "message": t("messages.success.all_operations_completed") if results["overall_success"] else t("messages.error.some_operations_failed")
-        }
+            # Compile summary
+            total_processed = 0
+            if telemetry_result.get("data", {}).get("processed_ides"):
+                total_processed = max(total_processed, len(telemetry_result["data"]["processed_ides"]))
+            if database_result.get("data", {}).get("processed_ides"):
+                total_processed = max(total_processed, len(database_result["data"]["processed_ides"]))
+            if workspace_result.get("data", {}).get("processed_ides"):
+                total_processed = max(total_processed, len(workspace_result["data"]["processed_ides"]))
+
+            return {
+                "success": results["overall_success"],
+                "data": results,
+                "message": t("messages.success.all_operations_completed") if results["overall_success"] else t("messages.error.some_operations_failed")
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+                "message": "Failed to run all operations"
+            }
 
     def run_full_automation(self, options: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -348,6 +542,7 @@ class AugmentFreeAPI:
                 - include_signin: bool (default: True)
                 - include_restart: bool (default: True)
                 - target_ide: str (optional, IDE display name to target)
+                - clean_all_ides: bool (default: False, if True cleans all detected IDEs)
 
         Returns:
             dict: Automation results
@@ -356,28 +551,47 @@ class AugmentFreeAPI:
             if options is None:
                 options = {}
 
-            # Get target IDE
+            # Ensure system information is available
+            if not self.ensure_system_info_available():
+                return {
+                    "success": False,
+                    "error": "System information not available",
+                    "message": "Unable to detect IDE configuration. Please ensure the IDE is properly installed."
+                }
+
+            # Get target IDE (only if not cleaning all IDEs)
             target_ide = None
-            target_ide_name = options.get("target_ide")
+            clean_all_ides = options.get("clean_all_ides", False)
+            
+            if not clean_all_ides:
+                target_ide_name = options.get("target_ide")
 
-            if target_ide_name:
-                # Find specific IDE
-                detection_result = self.detect_ides()
-                if detection_result["success"] and detection_result.get("ides"):
-                    for ide in detection_result["ides"]:
-                        if ide.get("display_name") == target_ide_name:
-                            target_ide = ide
-                            break
+                if target_ide_name:
+                    # Find specific IDE
+                    detection_result = self.detect_ides()
+                    if detection_result["success"] and detection_result.get("ides"):
+                        for ide in detection_result["ides"]:
+                            if ide.get("display_name") == target_ide_name:
+                                target_ide = ide
+                                break
 
-                if target_ide is None:
+                    if target_ide is None:
+                        return {
+                            "success": False,
+                            "error": f"Target IDE '{target_ide_name}' not found",
+                            "message": t("messages.error.ide_not_found")
+                        }
+                else:
+                    # Use current IDE or auto-detect
+                    target_ide = self.current_ide_info
+
+                # Validate target IDE has required information
+                if not target_ide or not isinstance(target_ide, dict):
                     return {
                         "success": False,
-                        "error": f"Target IDE '{target_ide_name}' not found",
-                        "message": t("messages.error.ide_not_found")
+                        "error": "No valid IDE information available",
+                        "message": "Unable to find valid IDE configuration for automation"
                     }
-            else:
-                # Use current IDE or auto-detect
-                target_ide = self.current_ide_info
 
             # Run automation
             result = run_full_automation(
@@ -385,7 +599,64 @@ class AugmentFreeAPI:
                 include_signout=options.get("include_signout", True),
                 include_cleaning=options.get("include_cleaning", True),
                 include_signin=options.get("include_signin", True),
-                include_restart=options.get("include_restart", True)
+                include_restart=options.get("include_restart", True),
+                clean_all_ides=clean_all_ides
+            )
+
+            return {
+                "success": result["success"],
+                "data": result,
+                "message": result["message"]
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": t("messages.error.automation_failed")
+            }
+
+    def run_full_automation_all_ides(self, options: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Run the complete automation workflow for all detected IDEs:
+        1. Auto Signout (close all IDEs)
+        2. Auto DB Cleaning (clean all data for all IDEs)
+        3. Auto Signin (ready for new login)
+        4. Auto Restart IDE (start all IDEs)
+
+        Args:
+            options: Automation options
+                - include_signout: bool (default: True)
+                - include_cleaning: bool (default: True)
+                - include_signin: bool (default: True)
+                - include_restart: bool (default: True)
+
+        Returns:
+            dict: Automation results for all IDEs
+        """
+        try:
+            if options is None:
+                options = {}
+
+            # Ensure system information is available
+            if not self.ensure_system_info_available():
+                return {
+                    "success": False,
+                    "error": "System information not available",
+                    "message": "Unable to detect IDE configuration. Please ensure the IDE is properly installed."
+                }
+
+            # Set clean_all_ides to True
+            options["clean_all_ides"] = True
+
+            # Run automation for all IDEs
+            result = run_full_automation(
+                ide_info=None,  # Will be ignored when clean_all_ides is True
+                include_signout=options.get("include_signout", True),
+                include_cleaning=options.get("include_cleaning", True),
+                include_signin=options.get("include_signin", True),
+                include_restart=options.get("include_restart", True),
+                clean_all_ides=True
             )
 
             return {
@@ -828,5 +1099,68 @@ class AugmentFreeAPI:
                 "error": str(e),
                 "message": t("messages.error.translations_get_failed")
             }
+
+    def refresh_system_info(self) -> Dict[str, Any]:
+        """
+        Refresh system information by re-detecting IDE paths and configurations.
+        This ensures we always use the most up-to-date system information.
+
+        Returns:
+            dict: Updated system information
+        """
+        try:
+            # Re-detect IDEs to get fresh information
+            detection_result = self.detect_ides()
+            if detection_result["success"] and detection_result.get("ides"):
+                # Update current IDE info with the most relevant one
+                for ide in detection_result["ides"]:
+                    if ide.get("name") == self.editor_type or ide.get("display_name") == self.editor_type:
+                        self.current_ide_info = ide
+                        break
+                else:
+                    # If current editor not found, use the first detected IDE
+                    self.current_ide_info = detection_result["ides"][0]
+                    self.editor_type = self.current_ide_info.get("name", self.current_ide_info.get("editor_type", "VSCodium"))
+
+            # Get updated system info
+            return self.get_system_info()
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to refresh system information"
+            }
+
+    def ensure_system_info_available(self) -> bool:
+        """
+        Ensure that system information is available before performing operations.
+        This method validates that we have the necessary paths and configurations.
+
+        Returns:
+            bool: True if system information is available and valid
+        """
+        try:
+            # If we don't have current IDE info, try to detect it
+            if not self.current_ide_info:
+                self.refresh_system_info()
+                return self.current_ide_info is not None
+
+            # Validate that we have the necessary paths for the current IDE type
+            ide_type = self.current_ide_info.get("ide_type", "vscode")
+            
+            if ide_type == "jetbrains":
+                # For JetBrains, we need the config path
+                if not self.current_ide_info.get("jetbrains_config_path"):
+                    self.refresh_system_info()
+                    return self.current_ide_info.get("jetbrains_config_path") is not None
+            else:
+                # For VSCode series, we need at least storage path
+                if not self.current_ide_info.get("storage_path"):
+                    self.refresh_system_info()
+                    return self.current_ide_info.get("storage_path") is not None
+
+            return True
+        except Exception:
+            return False
 
 
