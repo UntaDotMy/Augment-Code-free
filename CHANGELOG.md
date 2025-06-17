@@ -8,27 +8,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- 
 
 ### Enhanced
-- 
 
 ### Fixed
-- 
 
 ### Technical
-- 
 
 ## [v1.2.1] - 2025-06-17
 
 ### Added
+- 🧹 **Simplified Architecture** - Removed unnecessary account information features
+  - Focused exclusively on Augment-related data cleaning operations
+  - Eliminated external API dependencies for better reliability
+  - Streamlined user interface without account display sections
 
 ### Enhanced
+- 🎯 **Core Functionality Focus** - Concentrated on essential IDE cleaning operations
+  - Improved application startup performance by removing account loading
+  - Cleaner header layout without account information clutter
+  - Better resource utilization with reduced feature complexity
 
 ### Fixed
-- 
+- 🗑️ **Removed Non-functional Features** - Eliminated account information display
+  - Account data was not available in IDE databases as expected
+  - Removed incomplete account extraction functionality
+  - Fixed potential errors from missing account data sources
 
 ### Technical
+- 🏗️ **Code Cleanup** - Removed account-related modules and dependencies
+  - Deleted account.py handler and related functions
+  - Cleaned up JavaScript account management code
+  - Removed account-related CSS styles and HTML elements
+  - Updated translations to remove account-specific text
+  - Simplified API core by removing account endpoints
+
 ## [v1.2.0] - 2025-06-17
 
 ### Added
