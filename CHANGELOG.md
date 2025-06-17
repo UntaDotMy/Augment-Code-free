@@ -8,18 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- 
 
 ### Enhanced
-- 
 
 ### Fixed
 - 
 
 ### Technical
-- 
 
-## [v1.1.1] - 2025-06-16
+## [v1.2.0] - 2025-06-17
 
 ### Added
 - 🤖 **Full Automation Workflow** - Complete 4-step automation process
