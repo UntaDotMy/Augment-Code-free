@@ -201,7 +201,8 @@ jobs:
           # Use Python for reliable cross-platform extraction
           # Extract from the version section that matches the current release
           version="${{ inputs.version || github.ref_name }}"
-          changelog_content=$(python3 -c "
+          # Create a temporary Python script for changelog extraction
+          cat > extract_changelog.py << 'EOF'
 import sys
 import re
 try:
@@ -209,7 +210,7 @@ try:
         content = f.read()
 
     lines = content.split('\n')
-    version = '$version'
+    version = sys.argv[1] if len(sys.argv) > 1 else ''
 
     # First try to find the specific version section
     version_start = -1
@@ -218,7 +219,7 @@ try:
     # Look for version section like '## [v1.2.3]' or '## [1.2.3]'
     version_patterns = [
         f'## [{version}]',
-        f'## [{version.lstrip(\"v\")}]'
+        f'## [{version.lstrip("v")}]'
     ]
 
     for pattern in version_patterns:
@@ -285,7 +286,9 @@ try:
         print('')
 except Exception as e:
     print('')
-")
+EOF
+
+          changelog_content=$(python3 extract_changelog.py "$version")
 
           # Debug: show what we extracted
           echo "📝 Extracted content ($(echo "$changelog_content" | wc -l) lines):"
