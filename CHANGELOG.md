@@ -7,32 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Enhanced
-- 🌐 **Translation System Overhaul** - Complete elimination of hardcoded text
-  - Replaced all hardcoded Chinese strings with translation keys
-  - Fixed language switching to update all content immediately without refresh
-  - Enhanced dynamic content translation for progress dialogs and results
-  - Added comprehensive translation keys for all operation states and messages
+### Added
+- 
 
-### Improved
-- 📊 **User Experience for Complex Operations** - Enhanced progress dialog behavior
-  - Run All Operations, Full Automation, and Custom Automation no longer auto-close
-  - Users can now review detailed results at their own pace
-  - Added clear instructions on how to close progress dialogs
-  - Individual operations (telemetry, database, workspace) still auto-close for efficiency
-  - Progress dialogs show completion status with helpful review messages
+### Enhanced
+- 
+
+### Fixed
+- 
+
+### Technical
+- 
+
+## [v1.2.1] - 2025-06-17
 
 ### Fixed
 - 🔧 **GitHub Actions Workflow** - Fixed YAML syntax error in build.yml
   - Resolved line 206 syntax issue with changelog extraction
   - Simplified Python script approach to avoid YAML conflicts
   - Ensured proper workflow execution for auto-release system
-- 🌐 **Translation Issues** - Fixed all remaining hardcoded text in JavaScript functions
-  - Fixed hardcoded status values ("是", "否", "已更新") in operation results
-  - Fixed hardcoded progress messages in automation workflows
-  - Fixed hardcoded error messages and completion notifications
-  - Enhanced language switching to update progress dialogs and results panels
-
 ## [v1.2.1] - 2025-06-17
 
 ### Added
