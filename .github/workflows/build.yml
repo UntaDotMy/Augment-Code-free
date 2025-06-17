@@ -194,129 +194,48 @@ jobs:
     - name: Extract changelog content
       id: changelog
       run: |
-        # Extract unreleased section from CHANGELOG.md
+        echo "📋 Extracting changelog content..."
+
+        # Simple approach - extract the latest version section from CHANGELOG.md
         if [ -f "CHANGELOG.md" ]; then
-          echo "📋 Extracting changelog content..."
-
-          # Use Python for reliable cross-platform extraction
-          # Extract from the version section that matches the current release
           version="${{ inputs.version || github.ref_name }}"
-          # Create a temporary Python script for changelog extraction
-          cat > extract_changelog.py << 'EOF'
-import sys
-import re
-try:
-    with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
-        content = f.read()
 
-    lines = content.split('\n')
-    version = sys.argv[1] if len(sys.argv) > 1 else ''
+          # Try to find the version section, fallback to a simple extraction
+          changelog_content=$(awk '/^## \['"${version}"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md 2>/dev/null || echo "")
 
-    # First try to find the specific version section
-    version_start = -1
-    version_end = -1
+          # If that fails, try without the 'v' prefix
+          if [ -z "$changelog_content" ]; then
+            version_no_v="${version#v}"
+            changelog_content=$(awk '/^## \['"${version_no_v}"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md 2>/dev/null || echo "")
+          fi
 
-    # Look for version section like '## [v1.2.3]' or '## [1.2.3]'
-    version_patterns = [
-        f'## [{version}]',
-        f'## [{version.lstrip("v")}]'
-    ]
+          # If still empty, try unreleased section
+          if [ -z "$changelog_content" ]; then
+            changelog_content=$(awk '/^## \[Unreleased\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md 2>/dev/null || echo "")
+          fi
 
-    for pattern in version_patterns:
-        for i, line in enumerate(lines):
-            if line.strip().startswith(pattern):
-                version_start = i + 1
-                break
-        if version_start != -1:
-            break
+          # Clean up empty lines and sections
+          changelog_content=$(echo "$changelog_content" | sed '/^$/d' | sed '/^### *$/d' | sed '/^- *$/d')
 
-    # If version section not found, try unreleased section
-    if version_start == -1:
-        for i, line in enumerate(lines):
-            if line.strip() == '## [Unreleased]':
-                version_start = i + 1
-                break
-
-    if version_start != -1:
-        # Find the end of the section
-        for i in range(version_start, len(lines)):
-            line = lines[i].strip()
-            if line.startswith('## ') or line == '---':
-                version_end = i
-                break
-
-        if version_end == -1:
-            version_end = len(lines)
-
-        section_lines = lines[version_start:version_end]
-
-        # Remove empty lines at the beginning and end
-        while section_lines and not section_lines[0].strip():
-            section_lines.pop(0)
-        while section_lines and not section_lines[-1].strip():
-            section_lines.pop()
-
-        # Filter out lines that are just section headers with no content
-        filtered_lines = []
-        skip_next = False
-        for i, line in enumerate(section_lines):
-            if line.strip().startswith('### '):
-                # Check if this section has content
-                has_content = False
-                for j in range(i + 1, len(section_lines)):
-                    next_line = section_lines[j].strip()
-                    if next_line.startswith('### '):
-                        break
-                    if next_line and next_line != '-':
-                        has_content = True
-                        break
-
-                if has_content:
-                    filtered_lines.append(line)
-                    skip_next = False
-                else:
-                    skip_next = True
-            elif not skip_next:
-                if line.strip() and line.strip() != '-':
-                    filtered_lines.append(line)
-
-        section_content = '\n'.join(filtered_lines)
-        print(section_content)
-    else:
-        print('')
-except Exception as e:
-    print('')
-EOF
-
-          changelog_content=$(python3 extract_changelog.py "$version")
-
-          # Debug: show what we extracted
-          echo "📝 Extracted content ($(echo "$changelog_content" | wc -l) lines):"
-          echo "$changelog_content" | head -10
-
-          # If changelog content is empty, use a default message
-          if [ -z "$changelog_content" ] || [ "$(echo "$changelog_content" | tr -d '[:space:]')" = "" ]; then
-            echo "⚠️ No unreleased content found, using default message"
+          # If still empty, use default
+          if [ -z "$changelog_content" ]; then
             changelog_content="### Changes
         - Various improvements and bug fixes
         - See commit history for detailed changes"
-          else
-            echo "✅ Found unreleased content"
           fi
 
-          # Save to output (escape newlines for GitHub Actions)
-          echo "content<<EOF" >> $GITHUB_OUTPUT
-          echo "$changelog_content" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
+          echo "✅ Found changelog content"
         else
           echo "⚠️ CHANGELOG.md not found, using default content"
-          echo "content<<EOF" >> $GITHUB_OUTPUT
-          echo "### Changes
+          changelog_content="### Changes
         - Various improvements and bug fixes
-        - See commit history for detailed changes" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+        - See commit history for detailed changes"
         fi
+
+        # Save to output
+        echo "content<<EOF" >> $GITHUB_OUTPUT
+        echo "$changelog_content" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
