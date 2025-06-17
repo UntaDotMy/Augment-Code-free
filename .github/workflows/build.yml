@@ -341,7 +341,7 @@ except Exception as e:
 
           ### ✨ Key Features
           - 🤖 **Full Automation Workflow** - Complete 4-step automation process
-          - 👤 **Account Information** - Integrated Augment account details and status
+          - 🧹 **Focused Cleaning Operations** - Streamlined Augment-specific data cleaning
           - 🔍 **Smart IDE Detection** - Automatic detection with path verification
           - 💙 **VS Code Insiders Support** - Complete compatibility
           - 🌐 **Multi-language Interface** - Chinese/English switching
